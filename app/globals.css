@@ -79,6 +79,23 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/*
+ * Menú superior plegable. Quién se ve lo decide este CSS a partir de `data-nav`,
+ * que el script del <head> pone antes del primer pintado: así no se ve el menú
+ * aparecer y desaparecer al cargar, ni hay que esperar a que React hidrate.
+ */
+:root[data-nav="hidden"] .app-header {
+  display: none;
+}
+
+.nav-restore {
+  display: none;
+}
+
+:root[data-nav="hidden"] .nav-restore {
+  display: flex;
+}
+
 @layer components {
   .field {
     @apply w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm

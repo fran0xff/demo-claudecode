@@ -51,6 +51,11 @@ script en el `<head>`, antes del primer pintado, para que la página no aparezca
 un instante con el tema equivocado. El selector lee la preferencia con
 `useSyncExternalStore`, así que también se sincroniza entre pestañas.
 
+**El menú superior se puede plegar** con el botón de la derecha de la cabecera.
+Al ocultarse queda un botón flotante que lo devuelve, y la preferencia se
+recuerda igual que el tema. Quién se ve lo decide el CSS a partir de `data-nav`,
+no el estado de React, así que en la primera pintura ya está el botón correcto.
+
 **El identificador fiscal se valida de verdad** (`lib/tax-id.ts`): NIF, NIE y
 CIF con su dígito o letra de control, no solo el formato.
 

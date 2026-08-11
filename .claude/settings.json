@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npm install *)",
+      "Bash(npx prisma *)",
+      "Bash(git commit *)",
+      "Bash(git * main)",
+      "Read(~/.profile)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Bash(git push *)"
+    ]
+  }
+}

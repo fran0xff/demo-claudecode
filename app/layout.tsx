@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { NavToggle } from "@/components/nav-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NAV_INIT_SCRIPT } from "@/lib/nav";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
@@ -10,16 +12,21 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
-  // `suppressHydrationWarning`: el script del <head> escribe `data-theme` antes
-  // de que React hidrate, así que el <html> del servidor y el del cliente
-  // difieren a propósito.
+  // `suppressHydrationWarning`: los scripts del <head> escriben `data-theme` y
+  // `data-nav` antes de que React hidrate, así que el <html> del servidor y el
+  // del cliente difieren a propósito.
   return (
     <html lang="es" className="h-full antialiased" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <script
+          dangerouslySetInnerHTML={{ __html: `${THEME_INIT_SCRIPT};${NAV_INIT_SCRIPT}` }}
+        />
       </head>
       <body className="flex min-h-full flex-col">
-        <header className="border-b border-[var(--border)] bg-[var(--surface)]">
+        <header
+          id="menu-principal"
+          className="app-header border-b border-[var(--border)] bg-[var(--surface)]"
+        >
           <nav className="mx-auto flex max-w-5xl items-center gap-6 px-6 py-4">
             <Link href="/invoices" className="text-base font-semibold">
               Facturas
@@ -32,9 +39,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 Ajustes
               </Link>
               <ThemeToggle />
+              <NavToggle variant="inline" />
             </div>
           </nav>
         </header>
+
+        {/* Vive fuera del <header> porque tiene que sobrevivir a que este se
+            oculte; el CSS solo lo muestra en ese caso. */}
+        <NavToggle variant="floating" />
 
         <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">{children}</main>
       </body>
