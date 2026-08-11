@@ -1,0 +1,82 @@
+// Esquema de la app de facturación.
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+/// Una factura emitida. Los datos del emisor y del receptor se guardan
+/// embebidos (no por relación) para que una factura ya emitida no cambie
+/// si mañana se editan los ajustes o los datos del cliente.
+model Invoice {
+  id        String   @id @default(cuid())
+  series    String   @default("A")
+  number    Int
+  year      Int
+  issueDate DateTime @default(now())
+  dueDate   DateTime?
+  currency  String   @default("EUR")
+
+  // Emisor: copiado desde Settings en el momento de crear la factura.
+  issuerName    String
+  issuerTaxId   String
+  issuerAddress String
+
+  // Receptor embebido. En v2 se extraerá a un modelo Client.
+  clientName    String
+  clientTaxId   String
+  clientAddress String
+  clientEmail   String?
+
+  /// Retención de IRPF en %, 0 = sin retención.
+  irpfRate Decimal @default(0)
+  notes    String?
+
+  // Totales calculados en servidor y persistidos, no derivados en lectura.
+  subtotal Decimal
+  taxTotal Decimal
+  irpfTotal Decimal
+  total    Decimal
+
+  lines     InvoiceLine[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@unique([series, year, number])
+  @@index([year, series, number])
+}
+
+model InvoiceLine {
+  id        String  @id @default(cuid())
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  /// Orden de la línea dentro de la factura.
+  position    Int
+  description String
+  quantity    Decimal
+  unitPrice   Decimal
+  /// Tipo de IVA en %: 21, 10, 4 o 0.
+  vatRate     Decimal
+  discountPct Decimal @default(0)
+  /// Base imponible de la línea, ya con el descuento aplicado.
+  lineTotal   Decimal
+
+  @@index([invoiceId])
+}
+
+/// Fila única (id = 1) con los datos del emisor y los valores por defecto.
+model Settings {
+  id            Int     @id @default(1)
+  issuerName    String
+  issuerTaxId   String
+  issuerAddress String
+  defaultVatRate Decimal @default(21)
+  defaultSeries  String  @default("A")
+  updatedAt     DateTime @updatedAt
+}
