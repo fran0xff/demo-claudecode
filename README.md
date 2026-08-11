@@ -45,6 +45,12 @@ mismo motivo, los datos del emisor se *copian* desde los ajustes al crear la
 factura en vez de referenciarse, y la serie, el año y el correlativo quedan
 fijos tras la creación.
 
+**El tema tiene tres estados**: claro, oscuro y el de por defecto, que sigue al
+sistema. La elección se marca con `data-theme` en `<html>` y se aplica desde un
+script en el `<head>`, antes del primer pintado, para que la página no aparezca
+un instante con el tema equivocado. El selector lee la preferencia con
+`useSyncExternalStore`, así que también se sincroniza entre pestañas.
+
 **El identificador fiscal se valida de verdad** (`lib/tax-id.ts`): NIF, NIE y
 CIF con su dígito o letra de control, no solo el formato.
 

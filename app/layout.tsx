@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -8,8 +10,14 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
+  // `suppressHydrationWarning`: el script del <head> escribe `data-theme` antes
+  // de que React hidrate, así que el <html> del servidor y el del cliente
+  // difieren a propósito.
   return (
-    <html lang="es" className="h-full antialiased">
+    <html lang="es" className="h-full antialiased" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className="flex min-h-full flex-col">
         <header className="border-b border-[var(--border)] bg-[var(--surface)]">
           <nav className="mx-auto flex max-w-5xl items-center gap-6 px-6 py-4">
@@ -23,6 +31,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               <Link href="/settings" className="transition hover:text-[var(--foreground)]">
                 Ajustes
               </Link>
+              <ThemeToggle />
             </div>
           </nav>
         </header>

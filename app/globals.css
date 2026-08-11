@@ -1,6 +1,17 @@
 @import "tailwindcss";
 
+/*
+ * El tema tiene tres estados: "claro", "oscuro" y el de por defecto, que sigue
+ * al sistema. La elección explícita se marca con `data-theme` en <html>; cuando
+ * no hay ninguna, manda `prefers-color-scheme`.
+ *
+ * Por eso cada color se define aquí, en `:root` a secas, y los bloques de abajo
+ * solo redefinen los tokens: un color cuya única definición viviera dentro de
+ * un media query desaparecería al forzar el tema claro.
+ */
 :root {
+  color-scheme: light;
+
   --background: #f6f7f9;
   --surface: #ffffff;
   --foreground: #16181d;
@@ -24,8 +35,11 @@
   --color-danger-soft: var(--danger-soft);
 }
 
+/* Preferencia del sistema, salvo que se haya forzado el tema claro. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
     --background: #101216;
     --surface: #181b21;
     --foreground: #e9ecf1;
@@ -36,6 +50,21 @@
     --danger: #f0796a;
     --danger-soft: #33201e;
   }
+}
+
+/* Elección explícita del usuario: gana en ambos sentidos. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --background: #101216;
+  --surface: #181b21;
+  --foreground: #e9ecf1;
+  --muted: #9aa2b1;
+  --border: #2a2e37;
+  --accent: #6d92f0;
+  --accent-soft: #1c2436;
+  --danger: #f0796a;
+  --danger-soft: #33201e;
 }
 
 body {
