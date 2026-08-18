@@ -71,6 +71,8 @@ async function main() {
         series: SETTINGS.defaultSeries,
         number: sample.number,
         year,
+        // Los ejemplos vienen ya emitidos: tienen número.
+        status: "EMITIDA",
         issueDate: sample.issueDate,
         dueDate: sample.dueDate,
         issuerName: SETTINGS.issuerName,

@@ -23,12 +23,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         />
       </head>
       <body className="flex min-h-full flex-col">
-        <header
-          id="menu-principal"
-          className="app-header border-b border-[var(--border)] bg-[var(--surface)]"
-        >
+        {/* La cabecera no es una superficie: es una franja del propio papel con
+            un filete. Lo único blanco de la pantalla son los documentos. */}
+        <header id="menu-principal" className="app-header border-b border-[var(--border)]">
           <nav className="mx-auto flex max-w-5xl items-center gap-6 px-6 py-4">
-            <Link href="/invoices" className="text-base font-semibold">
+            <Link
+              href="/invoices"
+              className="text-base font-semibold tracking-tight hover:text-[var(--accent)]"
+            >
               Facturas
             </Link>
             <div className="ml-auto flex items-center gap-4 text-sm text-[var(--muted)]">
@@ -48,7 +50,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             oculte; el CSS solo lo muestra en ese caso. */}
         <NavToggle variant="floating" />
 
-        <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">{children}</main>
+        <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10">{children}</main>
       </body>
     </html>
   );

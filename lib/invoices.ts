@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { isInvoiceStatus, type InvoiceStatus } from "@/lib/invoice-status";
 
 /**
  * Acceso a datos de facturas.
@@ -24,8 +25,10 @@ export type InvoiceLineDTO = {
 export type InvoiceDTO = {
   id: string;
   series: string;
-  number: number;
+  /** Null mientras es borrador: el número se asigna al emitir. */
+  number: number | null;
   year: number;
+  status: InvoiceStatus;
   issueDate: string;
   dueDate: string | null;
   currency: string;
@@ -79,12 +82,18 @@ function findInvoiceRow(id: string) {
   });
 }
 
+/** La columna es un String suelto; si trajera basura, la tratamos como borrador. */
+function toStatus(value: string): InvoiceStatus {
+  return isInvoiceStatus(value) ? value : "BORRADOR";
+}
+
 function toDTO(invoice: NonNullable<InvoiceRow>): InvoiceDTO {
   return {
     id: invoice.id,
     series: invoice.series,
     number: invoice.number,
     year: invoice.year,
+    status: toStatus(invoice.status),
     issueDate: invoice.issueDate.toISOString(),
     dueDate: invoice.dueDate ? invoice.dueDate.toISOString() : null,
     currency: invoice.currency,
@@ -121,7 +130,16 @@ export async function getInvoice(id: string): Promise<InvoiceDTO | null> {
 
 export type InvoiceSummary = Pick<
   InvoiceDTO,
-  "id" | "series" | "number" | "year" | "issueDate" | "clientName" | "total" | "currency"
+  | "id"
+  | "series"
+  | "number"
+  | "year"
+  | "status"
+  | "issueDate"
+  | "dueDate"
+  | "clientName"
+  | "total"
+  | "currency"
 >;
 
 export async function listInvoices(): Promise<InvoiceSummary[]> {
@@ -132,18 +150,54 @@ export async function listInvoices(): Promise<InvoiceSummary[]> {
       series: true,
       number: true,
       year: true,
+      status: true,
       issueDate: true,
+      dueDate: true,
       clientName: true,
       total: true,
       currency: true,
+      createdAt: true,
     },
   });
 
-  return invoices.map((invoice) => ({
-    ...invoice,
+  const summaries: InvoiceSummary[] = invoices.map((invoice) => ({
+    id: invoice.id,
+    series: invoice.series,
+    number: invoice.number,
+    year: invoice.year,
+    status: toStatus(invoice.status),
     issueDate: invoice.issueDate.toISOString(),
+    dueDate: invoice.dueDate ? invoice.dueDate.toISOString() : null,
+    clientName: invoice.clientName,
     total: num(invoice.total),
+    currency: invoice.currency,
   }));
+
+  // Los borradores van arriba: son los que piden una decisión. Se ordenan
+  // aparte porque no tienen número y SQLite los mandaría al final.
+  const drafts = invoices
+    .map((invoice, index) => ({ invoice, summary: summaries[index] }))
+    .filter(({ summary }) => summary.status === "BORRADOR")
+    .sort((a, b) => b.invoice.createdAt.getTime() - a.invoice.createdAt.getTime())
+    .map(({ summary }) => summary);
+
+  return [...drafts, ...summaries.filter((summary) => summary.status !== "BORRADOR")];
+}
+
+/**
+ * El correlativo que le tocaría a la siguiente factura de esa serie y año.
+ *
+ * Es informativo, para poder enseñarlo antes de emitir: el número de verdad lo
+ * asigna `issueInvoice` dentro de una transacción.
+ */
+export async function nextInvoiceNumber(series: string, year: number): Promise<number> {
+  const last = await prisma.invoice.findFirst({
+    where: { series, year, number: { not: null } },
+    orderBy: { number: "desc" },
+    select: { number: true },
+  });
+
+  return (last?.number ?? 0) + 1;
 }
 
 export async function getSettings(): Promise<SettingsDTO> {

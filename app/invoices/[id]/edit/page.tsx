@@ -2,9 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { updateInvoice } from "@/app/invoices/actions";
 import { InvoiceForm } from "@/components/invoice-form";
+import { InvoiceNumber } from "@/components/invoice-number";
 import { toDateInputValue } from "@/lib/format";
 import { formatInvoiceNumber } from "@/lib/invoice-math";
 import { getInvoice, getSettings } from "@/lib/invoices";
+
+export const dynamic = "force-dynamic";
 
 export default async function EditInvoicePage({
   params,
@@ -13,19 +16,48 @@ export default async function EditInvoicePage({
   const [invoice, settings] = await Promise.all([getInvoice(id), getSettings()]);
   if (!invoice) notFound();
 
-  const number = formatInvoiceNumber(invoice.series, invoice.year, invoice.number);
+  const isDraft = invoice.number === null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <Link href={`/invoices/${invoice.id}`} className="text-sm text-[var(--muted)] hover:underline">
-          ← Volver a la factura
+        <Link
+          href={`/invoices/${invoice.id}`}
+          className="text-sm text-[var(--muted)] transition hover:text-[var(--foreground)]"
+        >
+          ←{" "}
+          {isDraft
+            ? "Borrador"
+            : formatInvoiceNumber(invoice.series, invoice.year, invoice.number!)}
         </Link>
-        <h1 className="tabular mt-2 text-2xl font-semibold">Editar factura {number}</h1>
-        <p className="text-sm text-[var(--muted)]">
-          El número, la serie y el año no cambian: una factura ya emitida conserva su
-          numeración.
-        </p>
+
+        <p className="eyebrow mt-6">Editando</p>
+
+        {isDraft ? (
+          <>
+            <h1 className="mt-1 text-[2rem] leading-none tracking-tight sm:text-[2.75rem]">
+              Borrador
+            </h1>
+            <p className="mt-3 text-sm text-[var(--muted)]">
+              Todavía no ha gastado correlativo, así que puedes cambiarle la serie y la
+              fecha: el número se decide al emitirla.
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="mt-1 text-[2rem] leading-none sm:text-[2.75rem]">
+              <InvoiceNumber
+                series={invoice.series}
+                year={invoice.year}
+                number={invoice.number!}
+              />
+            </h1>
+            <p className="mt-3 text-sm text-[var(--muted)]">
+              La serie, el año y el correlativo no cambian: una factura emitida conserva
+              su numeración.
+            </p>
+          </>
+        )}
       </div>
 
       <InvoiceForm

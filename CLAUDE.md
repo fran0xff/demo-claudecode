@@ -51,6 +51,22 @@ Reglas que no se deben "simplificar":
 - Toda la aritmética intermedia va en `Decimal`, redondeando solo al cerrar cada
   nivel: línea → base por tipo → total.
 
+### El número se gasta al emitir, no al crear
+
+`Invoice.number` es **nullable**: una factura nace como `BORRADOR` sin número y
+lo recibe en `issueInvoice`. Si se numerase al crear, borrar un borrador dejaría
+un hueco en la serie, que es justo lo que la numeración no puede tener.
+
+La numeración es por serie y año, se asigna dentro de una transacción, está
+respaldada por `@@unique([series, year, number])` (en SQLite los `NULL` no
+colisionan entre sí, así que puede haber muchos borradores) y reintenta ante
+colisión.
+
+Los estados viven en `lib/invoice-status.ts`, no en un enum: SQLite no los
+admite en Prisma, así que la columna es un `String` y las acciones validan
+contra esa lista. **"Vencida" no es un estado guardado**, se deduce de
+`dueDate` al leer para que no se quede desfasado.
+
 ### Lo que queda congelado en una factura
 
 Una factura emitida no puede cambiar retroactivamente, así que:
@@ -60,11 +76,19 @@ Una factura emitida no puede cambiar retroactivamente, así que:
   hay relación. Cambiar los ajustes no toca las facturas ya emitidas.
 - Los datos del **cliente van embebidos** en `Invoice` (todavía no hay modelo
   `Client`).
-- **Serie, año y correlativo son inmutables** tras la creación: `updateInvoice`
-  no los toca y el formulario los muestra en solo lectura al editar.
+- **Serie, año y correlativo son inmutables una vez emitida**: `updateInvoice`
+  solo toca serie y año mientras es `BORRADOR`, y el formulario muestra el
+  número en solo lectura.
+- De `EMITIDA`/`ENVIADA`/`PAGADA` **no se vuelve a `BORRADOR`**: el correlativo
+  ya está gastado.
 
-La numeración es por serie y año, se asigna dentro de una transacción, está
-respaldada por `@@unique([series, year, number])` y reintenta ante colisión.
+### El PDF es la hoja de impresión
+
+No hay librería de PDF. `@media print` en `globals.css` reescribe los tokens a
+tinta sobre blanco (pasando por encima del tema oscuro) y esconde todo lo que
+lleva `.no-print`; el usuario elige "Guardar como PDF". Así **no hay una segunda
+maquetación** que mantener en sintonía con la pantalla. Lo que sea interfaz y no
+documento —botones, estado, "vencida"— tiene que llevar `.no-print`.
 
 ### Contrato entre formulario y Server Action
 
@@ -78,6 +102,26 @@ Ese nombre es un contrato de tres puntas:
 
 Si cambias el patrón en un sitio, cámbialo en los tres o los errores dejan de
 aparecer **en silencio**.
+
+### El aviso dura una petición
+
+Crear, guardar, emitir, cambiar de estado y eliminar dejan un aviso arriba de la
+pantalla (`components/flash-banner.tsx`). Va en **cookie** (`lib/flash-cookie.ts`),
+no en el `FormState`: esas acciones terminan en `redirect` o en `revalidatePath`,
+así que lo que devuelven no llega a pintarse.
+
+Tres cosas que parecen arbitrarias y no lo son:
+
+- **`<Flash />` va en las páginas destino, no en el layout.** Al redirigir, Next
+  solo vuelve a renderizar los segmentos que cambian, y el layout no es uno de
+  ellos: allí el aviso no aparecería.
+- **Quien borra la cookie es el banner, desde el navegador.** Un Server
+  Component no puede tocar cookies durante el render, así que no se puede leer y
+  borrar en el mismo sitio. El `maxAge: 30` es solo la red de seguridad para
+  cuando ese borrado no llega a ejecutarse.
+- **`.flash` lleva su `position: sticky` en el CSS, no como utilidad.** El
+  bloque de `globals.css` está fuera de toda capa y le gana a `.sticky` de
+  Tailwind, que vive en `@layer utilities`.
 
 ### Fronteras que hay que respetar
 
@@ -121,3 +165,35 @@ reales: levanta una SQLite temporal aplicando el SQL de la migración, y mockea
 `next/cache` y `next/navigation` (`redirect` lanza un error del que se extrae el
 destino). Cubren alta, correlativos, reinicio por año, series independientes,
 edición y borrado en cascada. Si tocas `actions.ts`, estos son los que importan.
+
+Aplica **todas** las migraciones en orden, no solo la inicial: si añades una,
+no hay que tocar el test.
+
+## Skills
+
+### Available skills
+
+| Skill | Para qué sirve |
+| --- | --- |
+| `frontend-design` | Diseño visual de la interfaz: dirección estética, paleta, tipografía y maquetación con criterio propio, sin quedarse en los valores por defecto de una plantilla |
+| `react-rules` | Mejores prácticas de React 19 con TypeScript: estructura del proyecto, Zustand, Zod, React Hook Form, reglas de hooks y `useEffect`, React Query / SWR |
+| `greeting` | Saludo inicial al usuario, formal y profesional |
+| `explain-code` | Explicación resumida de código: propósito, patrones, estructura y componentes |
+
+### Skill trigger rules
+
+- **`frontend-design`** — cuando se pida mejorar o cambiar el diseño de la app,
+  la interfaz, la UI o la UX, el aspecto visual, la paleta, la tipografía o la
+  maquetación; también cuando se pida "mejorar el diseño de React" o rehacer una
+  pantalla existente.
+- **`react-rules`** — cuando se pida crear una aplicación o componente React, o
+  agregar/modificar componentes, hooks, estado, formularios o lógica de UI en
+  React.
+- **`greeting`** — al iniciar sesión y cuando el usuario salude.
+- **`explain-code`** — cuando se pida explicar código.
+
+`frontend-design` y `react-rules` se solapan y **pueden aplicarse a la vez**: la
+primera decide cómo tiene que verse, la segunda cómo hay que escribirlo.
+
+No tomar en cuenta el comando `saludar` como skill: para saludar, solo
+`greeting`.

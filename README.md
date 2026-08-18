@@ -78,6 +78,36 @@ Toda la aritmética intermedia va en `Decimal` con `ROUND_HALF_UP` (el redondeo
 al alza en el 0,5 de la facturación española) y solo se redondea al cerrar cada
 nivel: línea → base por tipo → total.
 
+### El número se gasta al emitir, no al crear
+
+Una factura nace como **borrador**, sin número. Lo recibe al emitirla, y desde
+ahí pasa por **emitida → enviada → pagada**. Si se numerase al crear, borrar un
+borrador dejaría un hueco en la serie.
+
+`Invoice.number` es nullable y en SQLite los `NULL` no colisionan en un índice
+único, así que puede haber tantos borradores como haga falta sin tocar la
+restricción `@@unique([series, year, number])`.
+
+**"Vencida" no es un estado guardado**: se deduce de la fecha de vencimiento al
+leer, así que nunca se queda desfasada.
+
+### El PDF sale del navegador
+
+No hay librería de PDF ni una segunda maquetación. La factura se imprime desde
+el mismo HTML que se ve en pantalla, con una hoja `@media print` que reescribe
+los colores a tinta sobre blanco y esconde todo lo que es interfaz. El usuario
+elige "Guardar como PDF" en el diálogo del navegador.
+
+### El aviso dura una petición
+
+Cada alta, cambio o baja deja un aviso arriba de la pantalla que se retira solo
+a los seis segundos, o antes si se cierra. Viaja en una cookie que la Server
+Action escribe y que el propio banner borra nada más enseñarlo, así que no
+sobrevive a una recarga ni reaparece al volver atrás.
+
+Se pinta en las páginas que son destino de esas acciones y no en el layout: al
+redirigir, Next solo vuelve a renderizar los segmentos que cambian.
+
 ### Lo que queda congelado en una factura
 
 Tres modelos: `Invoice` (cabecera y totales), `InvoiceLine` (`onDelete: Cascade`)
@@ -226,7 +256,5 @@ los 5 dígitos (`1.234.567,50 €` sí los lleva). No lo "arregles".
 
 ## Fuera de alcance por ahora
 
-Catálogo de clientes reutilizables, exportación a PDF, estados de cobro
-(borrador / enviada / pagada / vencida) y dashboard. El esquema está pensado
-para admitirlos: `Client` se extrae de los campos de cliente hoy embebidos en
-`Invoice`, y `status` entra como una columna más.
+Catálogo de clientes reutilizables y dashboard de facturación. `Client` se
+extrae de los campos de cliente hoy embebidos en `Invoice` cuando haga falta.

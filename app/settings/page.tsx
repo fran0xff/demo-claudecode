@@ -9,10 +9,10 @@ export default async function SettingsPage() {
   const settings = await getSettings();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold">Ajustes</h1>
-        <p className="text-sm text-[var(--muted)]">
+        <h1 className="text-3xl font-semibold tracking-tight">Ajustes</h1>
+        <p className="mt-1 text-sm text-[var(--muted)]">
           Datos del emisor y valores que se proponen al crear una factura.
         </p>
       </div>

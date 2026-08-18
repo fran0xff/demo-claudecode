@@ -1,0 +1,1 @@
+ejecuta lint, corre solo 2 test unitarios, valida con build y finalmente levanta la app con npm run dev

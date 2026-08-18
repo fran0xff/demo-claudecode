@@ -1,12 +1,16 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { ChevronDownIcon, ChevronUpIcon } from "@/components/icons";
+import {
+  setRootAttribute,
+  useStoredPreference,
+  writeStoredPreference,
+} from "@/hooks/use-stored-preference";
 import { NAV_STORAGE_KEY } from "@/lib/nav";
 
 /*
- * Mostrar u ocultar el menú superior. Mismo planteamiento que el selector de
- * tema: la preferencia vive en localStorage (estado externo a React) y se lee
- * con useSyncExternalStore.
+ * Mostrar u ocultar el menú superior. Comparte con el selector de tema el hook
+ * `useStoredPreference`: la preferencia vive en localStorage.
  *
  * Quién se ve y quién no lo decide el CSS a partir de `data-nav` en <html>, no
  * este estado: así el botón correcto ya está pintado en el primer frame, con el
@@ -14,46 +18,15 @@ import { NAV_STORAGE_KEY } from "@/lib/nav";
  * `aria-expanded` y el texto accesible digan la verdad.
  */
 
-const listeners = new Set<() => void>();
-
-function subscribe(listener: () => void): () => void {
-  listeners.add(listener);
-  window.addEventListener("storage", listener);
-  return () => {
-    listeners.delete(listener);
-    window.removeEventListener("storage", listener);
-  };
+/** Visible es el estado por defecto y no ensucia el <html> con un atributo. */
+function parseHidden(stored: string | null): boolean {
+  return stored === "hidden";
 }
 
-function getSnapshot(): boolean {
-  try {
-    return localStorage.getItem(NAV_STORAGE_KEY) === "hidden";
-  } catch {
-    return false;
-  }
-}
-
-function getServerSnapshot(): boolean {
-  return false;
-}
-
-function toggleNav() {
-  const ocultar = !getSnapshot();
-
-  if (ocultar) {
-    document.documentElement.setAttribute("data-nav", "hidden");
-  } else {
-    document.documentElement.removeAttribute("data-nav");
-  }
-
-  try {
-    if (ocultar) localStorage.setItem(NAV_STORAGE_KEY, "hidden");
-    else localStorage.removeItem(NAV_STORAGE_KEY);
-  } catch {
-    // Se aplica igual, solo que no se recordará.
-  }
-
-  for (const listener of listeners) listener();
+function toggleNav(hidden: boolean) {
+  const value = hidden ? null : "hidden";
+  setRootAttribute("data-nav", value);
+  writeStoredPreference(NAV_STORAGE_KEY, value);
 }
 
 type Props = {
@@ -62,7 +35,7 @@ type Props = {
 };
 
 export function NavToggle({ variant }: Props) {
-  const hidden = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const hidden = useStoredPreference(NAV_STORAGE_KEY, parseHidden);
   const label = hidden ? "Mostrar el menú" : "Ocultar el menú";
 
   const base =
@@ -71,7 +44,7 @@ export function NavToggle({ variant }: Props) {
   return (
     <button
       type="button"
-      onClick={toggleNav}
+      onClick={() => toggleNav(hidden)}
       aria-expanded={!hidden}
       aria-controls="menu-principal"
       title={label}
@@ -84,33 +57,5 @@ export function NavToggle({ variant }: Props) {
       {variant === "floating" ? <ChevronDownIcon /> : <ChevronUpIcon />}
       <span className="sr-only">{label}</span>
     </button>
-  );
-}
-
-const iconProps = {
-  width: 15,
-  height: 15,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: "currentColor",
-  strokeWidth: 2,
-  strokeLinecap: "round" as const,
-  strokeLinejoin: "round" as const,
-  "aria-hidden": true,
-};
-
-function ChevronUpIcon() {
-  return (
-    <svg {...iconProps}>
-      <path d="m6 15 6-6 6 6" />
-    </svg>
-  );
-}
-
-function ChevronDownIcon() {
-  return (
-    <svg {...iconProps}>
-      <path d="m6 9 6 6 6-6" />
-    </svg>
   );
 }

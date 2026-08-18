@@ -5,17 +5,19 @@ import { deleteInvoice } from "@/app/invoices/actions";
 
 type Props = {
   invoiceId: string;
-  invoiceNumber: string;
+  /** Cómo nombrar lo que se borra: "la factura A-2026-0001" o "este borrador". */
+  confirmLabel: string;
 };
 
 /** Borrar una factura no se deshace, así que pedimos confirmación explícita. */
-export function DeleteInvoiceButton({ invoiceId, invoiceNumber }: Props) {
+export function DeleteInvoiceButton({ invoiceId, confirmLabel }: Props) {
   return (
     <form
+      className="no-print"
       action={deleteInvoice}
       onSubmit={(event) => {
         const confirmed = window.confirm(
-          `¿Eliminar la factura ${invoiceNumber}? Esta acción no se puede deshacer.`,
+          `¿Eliminar ${confirmLabel}? Esta acción no se puede deshacer.`,
         );
         if (!confirmed) event.preventDefault();
       }}

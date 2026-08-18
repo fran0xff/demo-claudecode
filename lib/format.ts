@@ -36,6 +36,18 @@ export function formatDate(value: Date | string): string {
   return dateFormatter.format(new Date(value));
 }
 
+/**
+ * "12,50" → 12.5. Lo que teclea el usuario es texto y en es-ES el decimal es la
+ * coma. Para el previsualizado en vivo, lo que no sea un número vale 0.
+ *
+ * El servidor normaliza igual en `numeric()` (`lib/validation.ts`), pero allí un
+ * valor inválido es un error de validación, no un cero.
+ */
+export function parseAmountInput(value: string): number {
+  const parsed = Number(value.trim().replace(",", "."));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 /** Fecha en formato "YYYY-MM-DD" para <input type="date">, en hora local. */
 export function toDateInputValue(value: Date | string): string {
   const date = new Date(value);

@@ -1,6 +1,18 @@
 @import "tailwindcss";
 
 /*
+ * Dirección visual: "correlativo".
+ *
+ * El mundo de una factura es el del libro de contabilidad, no el del panel de
+ * control: papel, cifras en columna y un número de serie que no puede tener
+ * huecos. De ahí vienen las dos decisiones que mandan aquí:
+ *
+ * 1. La paleta imita el papel rayado verde de los listados contables. Las
+ *    bandas alternas de las tablas (--band) no son adorno: son lo que permite
+ *    seguir una fila de importes sin perderse de columna.
+ * 2. Todo lo que es cifra va en monoespaciada, no solo con `tabular-nums`. Un
+ *    serial y una columna de dinero se componen así.
+ *
  * El tema tiene tres estados: "claro", "oscuro" y el de por defecto, que sigue
  * al sistema. La elección explícita se marca con `data-theme` en <html>; cuando
  * no hay ninguna, manda `prefers-color-scheme`.
@@ -12,20 +24,27 @@
 :root {
   color-scheme: light;
 
-  --background: #f6f7f9;
+  --background: #f3f4f0;
   --surface: #ffffff;
-  --foreground: #16181d;
-  --muted: #646b7a;
-  --border: #e3e6eb;
-  --accent: #2f5bd7;
-  --accent-soft: #eef2fd;
-  --danger: #c0392b;
-  --danger-soft: #fdecea;
+  /* Banda del papel rayado: filas pares de las tablas. */
+  --band: #e9efe7;
+  --foreground: #16211c;
+  --muted: #5e6e66;
+  --border: #d3dcd0;
+  --accent: #0e6049;
+  --accent-soft: #e2efe9;
+  --danger: #a5382b;
+  --danger-soft: #f7e9e6;
+
+  --font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-numeric: ui-monospace, "Cascadia Mono", "Segoe UI Mono", "SF Mono", Menlo,
+    Consolas, monospace;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
+  --color-band: var(--band);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-border: var(--border);
@@ -33,6 +52,9 @@
   --color-accent-soft: var(--accent-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
+
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-numeric);
 }
 
 /* Preferencia del sistema, salvo que se haya forzado el tema claro. */
@@ -40,15 +62,16 @@
   :root:not([data-theme="light"]) {
     color-scheme: dark;
 
-    --background: #101216;
-    --surface: #181b21;
-    --foreground: #e9ecf1;
-    --muted: #9aa2b1;
-    --border: #2a2e37;
-    --accent: #6d92f0;
-    --accent-soft: #1c2436;
-    --danger: #f0796a;
-    --danger-soft: #33201e;
+    --background: #0f1411;
+    --surface: #161d19;
+    --band: #1c251f;
+    --foreground: #e5ebe4;
+    --muted: #93a199;
+    --border: #2a352d;
+    --accent: #4cb894;
+    --accent-soft: #10261f;
+    --danger: #e8796b;
+    --danger-soft: #2c1a17;
   }
 }
 
@@ -56,27 +79,235 @@
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --background: #101216;
-  --surface: #181b21;
-  --foreground: #e9ecf1;
-  --muted: #9aa2b1;
-  --border: #2a2e37;
-  --accent: #6d92f0;
-  --accent-soft: #1c2436;
-  --danger: #f0796a;
-  --danger-soft: #33201e;
+  --background: #0f1411;
+  --surface: #161d19;
+  --band: #1c251f;
+  --foreground: #e5ebe4;
+  --muted: #93a199;
+  --border: #2a352d;
+  --accent: #4cb894;
+  --accent-soft: #10261f;
+  --danger: #e8796b;
+  --danger-soft: #2c1a17;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-body);
 }
 
-/* Los importes se leen mucho mejor alineados si todas las cifras ocupan lo
-   mismo, así que usamos las variantes tabulares de la fuente. */
+/* El foco tiene que verse siempre: se navega mucho por teclado tabulando entre
+   las líneas de una factura. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/*
+ * Cualquier cifra: importes, fechas, cantidades, tipos y números de factura.
+ * En monoespaciada todas ocupan lo mismo y las columnas cuadran solas.
+ */
 .tabular {
+  font-family: var(--font-numeric);
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/*
+ * El número de factura compuesto como el serial que es. Los separadores van
+ * atenuados para que se lean los tres segmentos —serie, año y correlativo—
+ * sin romper la cadena: copiada sigue siendo "A-2026-0001".
+ */
+.serial {
+  font-family: var(--font-numeric);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.serial-sep {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+/* Rótulo de sección: pequeño, en versales y espaciado. */
+.eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--muted);
+}
+
+/*
+ * Papel rayado. Las bandas alternas son la única decoración de la interfaz y
+ * se ganan el sitio: sirven para no saltar de fila al leer los importes.
+ */
+.ledger {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ledger thead th {
+  padding: 0.625rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--muted);
+}
+
+.ledger tbody td {
+  padding: 0.625rem 1rem;
+}
+
+/* Columna de cifras. Es una clase propia y no la utilidad `text-right` porque
+   `.ledger thead th` le ganaría en especificidad y la cabecera se quedaría
+   desalineada respecto a sus importes. */
+.ledger .num {
+  text-align: right;
+}
+
+.ledger tbody tr:nth-child(even) {
+  background: var(--band);
+}
+
+/* Solo donde la fila lleva a algún sitio; si no, el resalte engañaría. */
+.ledger-rows tbody tr:hover,
+.ledger-rows tbody tr:nth-child(even):hover {
+  background: var(--accent-soft);
+}
+
+/* Las líneas del formulario se rayan igual que las tablas: al teclear ocho
+   conceptos seguidos, la banda es lo que evita cambiar de fila sin querer. */
+.line-rows > * + * {
+  border-top: 1px solid var(--border);
+}
+
+.line-rows > *:nth-child(even) {
+  background: var(--band);
+}
+
+/*
+ * Estado de la factura. El desplegable lleva el color del estado actual, así
+ * que hace de etiqueta y de control a la vez sin ocupar dos huecos en la tabla.
+ */
+.status-select {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.1875rem 0.375rem;
+  border-radius: 2px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.status-select.status-emitida {
+  color: var(--foreground);
+}
+
+.status-select.status-enviada {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.status-select.status-pagada {
+  color: var(--surface);
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+/* "Vencida" no es un estado guardado: se deduce de la fecha de vencimiento. */
+.badge-vencida {
+  display: inline-block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--danger);
+}
+
+/*
+ * Aviso de un solo uso: aparece arriba tras crear, guardar, emitir o eliminar,
+ * y se retira solo.
+ *
+ * No es una tarjeta flotante sino una anotación al margen del libro: filete de
+ * 3 px a la izquierda, del color de la tinta con la que se anota. La regla que
+ * se encoge abajo tampoco es adorno —es el tiempo que le queda, dicho con el
+ * único recurso que usa esta interfaz, un filete—; sin ella el aviso
+ * desaparecería de golpe y parecería un fallo.
+ */
+.flash {
+  /* Pegajoso para que un cambio de estado hecho al final de un listado largo se
+     siga viendo. Va aquí y no como utilidad de Tailwind porque esta regla no
+     está en ninguna capa y le ganaría a `sticky`; además hace de referencia
+     para la regla del temporizador, que va posicionada. */
+  position: sticky;
+  top: 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 2px;
+  background: var(--accent-soft);
+  animation: flash-entrada 200ms ease-out both;
+}
+
+/* Lo que se da de baja se anota con la tinta roja. */
+.flash-aviso {
+  border-left-color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.flash-timer {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--accent);
+  transform-origin: left;
+  animation: flash-cuenta var(--flash-visible, 6s) linear forwards;
+}
+
+.flash-aviso .flash-timer {
+  background: var(--danger);
+}
+
+@keyframes flash-entrada {
+  from {
+    opacity: 0;
+    transform: translateY(-0.375rem);
+  }
+}
+
+@keyframes flash-cuenta {
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* Sin animación la regla no mide nada, así que sobra. */
+@media (prefers-reduced-motion: reduce) {
+  .flash-timer {
+    display: none;
+  }
 }
 
 /*
@@ -98,7 +329,7 @@ body {
 
 @layer components {
   .field {
-    @apply w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm
+    @apply w-full rounded border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm
       text-[var(--foreground)] outline-none transition
       focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20;
   }
@@ -110,28 +341,91 @@ body {
   /* Tailwind v4 no permite que una clase propia haga @apply de otra clase
      propia, así que cada variante repite la base en vez de componerla. */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium
+    @apply inline-flex items-center justify-center gap-2 rounded px-4 py-2 text-sm font-medium
       transition disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium
+    @apply inline-flex items-center justify-center gap-2 rounded px-4 py-2 text-sm font-medium
       transition disabled:cursor-not-allowed disabled:opacity-60
-      bg-[var(--accent)] text-white hover:opacity-90;
+      bg-[var(--accent)] text-[var(--surface)] hover:opacity-90;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium
+    @apply inline-flex items-center justify-center gap-2 rounded px-4 py-2 text-sm font-medium
       transition disabled:cursor-not-allowed disabled:opacity-60
       border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)]
-      hover:border-[var(--accent)];
+      hover:border-[var(--accent)] hover:text-[var(--accent)];
   }
 
+  /* La hoja: el documento sobre el escritorio. Filo marcado, sin sombra. */
   .card {
-    @apply rounded-xl border border-[var(--border)] bg-[var(--surface)];
+    @apply rounded border border-[var(--border)] bg-[var(--surface)];
   }
 
   .error-text {
     @apply mt-1 block text-xs text-[var(--danger)];
+  }
+}
+
+/*
+ * El PDF de la factura.
+ *
+ * No hay librería de PDF ni una segunda maquetación: se imprime este mismo
+ * HTML. Aquí se quita todo lo que es aplicación —cabecera, botones, enlaces de
+ * vuelta— y queda el documento.
+ *
+ * Los tokens se reescriben a tinta sobre blanco pasando por encima incluso del
+ * tema oscuro: este bloque va después, así que con la misma especificidad gana.
+ */
+@media print {
+  :root,
+  :root[data-theme="dark"],
+  :root[data-theme="light"] {
+    color-scheme: light;
+
+    --background: #ffffff;
+    --surface: #ffffff;
+    --band: #f4f4f2;
+    --foreground: #000000;
+    --muted: #444444;
+    --border: #999999;
+    --accent: #000000;
+    --accent-soft: #ffffff;
+  }
+
+  @page {
+    margin: 16mm;
+  }
+
+  .no-print,
+  .app-header,
+  .nav-restore {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff;
+  }
+
+  /* A4 no tiene 64rem: el documento ocupa la caja de impresión entera. */
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  .card {
+    border-radius: 0;
+  }
+
+  /* Ni el bloque del emisor y el cliente ni la tabla de líneas deben partirse
+     entre dos páginas si caben enteros. */
+  .card,
+  .ledger tbody tr {
+    break-inside: avoid;
+  }
+
+  .ledger thead {
+    display: table-header-group;
   }
 }

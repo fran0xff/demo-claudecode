@@ -14,13 +14,20 @@ datasource db {
 /// embebidos (no por relación) para que una factura ya emitida no cambie
 /// si mañana se editan los ajustes o los datos del cliente.
 model Invoice {
-  id        String   @id @default(cuid())
-  series    String   @default("A")
-  number    Int
-  year      Int
-  issueDate DateTime @default(now())
+  id     String @id @default(cuid())
+  series String @default("A")
+  /// Correlativo dentro de (serie, año). Null mientras es borrador: el número
+  /// solo se gasta al emitir, para que la serie no quede con huecos si el
+  /// borrador se acaba borrando.
+  number Int?
+  year   Int
+  /// BORRADOR | EMITIDA | ENVIADA | PAGADA. SQLite no admite enums en Prisma,
+  /// así que los valores válidos viven en `lib/invoice-status.ts`.
+  status String @default("BORRADOR")
+
+  issueDate DateTime  @default(now())
   dueDate   DateTime?
-  currency  String   @default("EUR")
+  currency  String    @default("EUR")
 
   // Emisor: copiado desde Settings en el momento de crear la factura.
   issuerName    String

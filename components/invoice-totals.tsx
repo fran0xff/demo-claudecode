@@ -14,6 +14,9 @@ type Props = {
 /**
  * Desglose de importes de una factura. Lo comparten el formulario (con los
  * totales calculados en vivo) y la vista de detalle (con los ya guardados).
+ *
+ * El total es la respuesta a la que viene el lector, así que es lo único que
+ * rompe la escala: el resto del desglose se queda en cuerpo pequeño.
  */
 export function InvoiceTotals({
   vatBreakdown,
@@ -25,7 +28,7 @@ export function InvoiceTotals({
   currency = "EUR",
 }: Props) {
   return (
-    <dl className="tabular space-y-2 text-sm">
+    <dl className="text-sm">
       <Row label="Base imponible" value={formatCurrency(subtotal, currency)} />
 
       {vatBreakdown.map((entry) => (
@@ -48,9 +51,9 @@ export function InvoiceTotals({
         />
       )}
 
-      <div className="flex items-baseline justify-between border-t border-[var(--border)] pt-2">
-        <dt className="text-base font-semibold">Total</dt>
-        <dd className="text-lg font-semibold">{formatCurrency(total, currency)}</dd>
+      <div className="mt-3 flex items-baseline justify-between gap-4 border-t-2 border-[var(--foreground)] pt-3">
+        <dt className="eyebrow">Total</dt>
+        <dd className="tabular text-2xl font-semibold">{formatCurrency(total, currency)}</dd>
       </div>
     </dl>
   );
@@ -67,12 +70,12 @@ function Row({
 }) {
   return (
     <div
-      className={`flex items-baseline justify-between gap-4 ${
+      className={`flex items-baseline justify-between gap-4 py-1 ${
         muted ? "text-[var(--muted)]" : ""
       }`}
     >
       <dt>{label}</dt>
-      <dd>{value}</dd>
+      <dd className="tabular">{value}</dd>
     </div>
   );
 }

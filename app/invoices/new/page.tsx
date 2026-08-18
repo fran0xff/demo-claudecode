@@ -13,14 +13,18 @@ export default async function NewInvoicePage() {
   const settings = await getSettings();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <Link href="/invoices" className="text-sm text-[var(--muted)] hover:underline">
-          ← Volver al listado
+        <Link
+          href="/invoices"
+          className="text-sm text-[var(--muted)] transition hover:text-[var(--foreground)]"
+        >
+          ← Listado
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold">Nueva factura</h1>
-        <p className="text-sm text-[var(--muted)]">
-          El número se asigna automáticamente al guardar, según la serie y el año.
+        <h1 className="mt-6 text-3xl font-semibold tracking-tight">Nueva factura</h1>
+        <p className="mt-1 text-sm text-[var(--muted)]">
+          Se guarda como borrador. Recibe su número al emitirla, correlativo dentro de
+          su serie y su año.
         </p>
       </div>
 

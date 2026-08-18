@@ -114,13 +114,25 @@ export function computeInvoiceTotals(
   };
 }
 
+/**
+ * Los tres segmentos del número de factura: serie, año y correlativo. La
+ * interfaz los compone por separado para poder atenuar los guiones.
+ */
+export function invoiceNumberParts(
+  series: string,
+  year: number,
+  number: number,
+): [string, string, string] {
+  return [series, String(year), String(number).padStart(4, "0")];
+}
+
 /** Número de factura legible: "A-2026-0001". */
 export function formatInvoiceNumber(
   series: string,
   year: number,
   number: number,
 ): string {
-  return `${series}-${year}-${String(number).padStart(4, "0")}`;
+  return invoiceNumberParts(series, year, number).join("-");
 }
 
 /** Tipos de IVA vigentes en España. */

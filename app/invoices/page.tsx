@@ -1,7 +1,10 @@
 import Link from "next/link";
+import { Flash } from "@/components/flash";
+import { InvoiceNumber } from "@/components/invoice-number";
+import { InvoiceStatusControl } from "@/components/invoice-status-control";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { formatInvoiceNumber } from "@/lib/invoice-math";
-import { getSettings, listInvoices } from "@/lib/invoices";
+import { isOverdue } from "@/lib/invoice-status";
+import { getSettings, listInvoices, nextInvoiceNumber } from "@/lib/invoices";
 
 export const metadata = { title: "Facturas" };
 
@@ -13,69 +16,137 @@ export default async function InvoicesPage() {
   const [invoices, settings] = await Promise.all([listInvoices(), getSettings()]);
   const issuerConfigured = Boolean(settings.issuerName && settings.issuerTaxId);
 
+  const year = new Date().getFullYear();
+  const nextNumber = await nextInvoiceNumber(settings.defaultSeries, year);
+
+  const drafts = invoices.filter((invoice) => invoice.status === "BORRADOR").length;
+  const issued = invoices.length - drafts;
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="space-y-8">
+      <Flash />
+
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Facturas</h1>
-          <p className="text-sm text-[var(--muted)]">
-            {invoices.length === 0
-              ? "Todavía no has emitido ninguna factura."
-              : `${invoices.length} ${invoices.length === 1 ? "factura emitida" : "facturas emitidas"}.`}
+          <h1 className="text-3xl font-semibold tracking-tight">Facturas</h1>
+          <p className="mt-1 text-sm text-[var(--muted)]">
+            {invoices.length > 0 && (
+              <>
+                {drafts > 0 && `${drafts} ${drafts === 1 ? "borrador" : "borradores"}`}
+                {drafts > 0 && issued > 0 && " · "}
+                {issued > 0 && `${issued} ${issued === 1 ? "emitida" : "emitidas"}`}
+                {". "}
+              </>
+            )}
+            La siguiente que emitas llevará el número{" "}
+            <InvoiceNumber
+              series={settings.defaultSeries}
+              year={year}
+              number={nextNumber}
+              className="text-[var(--foreground)]"
+            />
+            .
           </p>
         </div>
-        <Link href="/invoices/new" className="btn-primary">
-          Nueva factura
-        </Link>
+        {invoices.length > 0 && (
+          <Link href="/invoices/new" className="btn-primary">
+            Nueva factura
+          </Link>
+        )}
       </div>
 
       {!issuerConfigured && (
-        <p className="rounded-md border border-[var(--border)] bg-[var(--accent-soft)] px-4 py-3 text-sm">
-          Antes de emitir facturas, completa los datos del emisor en{" "}
-          <Link href="/settings" className="font-medium underline">
+        <p className="card border-[var(--accent)]/30 bg-[var(--accent-soft)] px-4 py-3 text-sm">
+          Falta el emisor. Completa tu nombre y NIF en{" "}
+          <Link href="/settings" className="font-medium text-[var(--accent)] underline">
             Ajustes
-          </Link>
-          .
+          </Link>{" "}
+          antes de emitir.
         </p>
       )}
 
       {invoices.length === 0 ? (
-        <div className="card p-10 text-center">
-          <p className="text-sm text-[var(--muted)]">
-            Cuando crees tu primera factura aparecerá aquí.
+        <div className="card px-6 py-16 text-center">
+          <p className="text-base font-medium">Aquí irán tus facturas.</p>
+          <p className="mx-auto mt-2 max-w-sm text-sm text-[var(--muted)]">
+            Se crean como borrador y reciben su número al emitirlas, correlativo dentro
+            de su serie y su año.
           </p>
+          <Link href="/invoices/new" className="btn-primary mt-6">
+            Nueva factura
+          </Link>
         </div>
       ) : (
         <div className="card overflow-x-auto">
-          <table className="w-full min-w-[36rem] text-sm">
+          <table className="ledger ledger-rows min-w-[52rem] text-sm">
             <thead>
-              <tr className="border-b border-[var(--border)] text-left text-xs uppercase tracking-wide text-[var(--muted)]">
-                <th className="px-4 py-3 font-medium">Número</th>
-                <th className="px-4 py-3 font-medium">Fecha</th>
-                <th className="px-4 py-3 font-medium">Cliente</th>
-                <th className="px-4 py-3 text-right font-medium">Total</th>
+              <tr>
+                <th>Número</th>
+                <th>Estado</th>
+                <th>Fecha</th>
+                <th>Cliente</th>
+                <th className="num">Total</th>
+                <th className="num">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {invoices.map((invoice) => (
-                <tr
-                  key={invoice.id}
-                  className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--accent-soft)]"
-                >
-                  <td className="px-4 py-3">
+                <tr key={invoice.id} className="transition-colors">
+                  <td>
                     <Link
                       href={`/invoices/${invoice.id}`}
-                      className="tabular font-medium text-[var(--accent)] hover:underline"
+                      className="text-[var(--accent)] hover:underline"
                     >
-                      {formatInvoiceNumber(invoice.series, invoice.year, invoice.number)}
+                      {invoice.number === null ? (
+                        <span className="text-[var(--muted)]">Borrador</span>
+                      ) : (
+                        <InvoiceNumber
+                          series={invoice.series}
+                          year={invoice.year}
+                          number={invoice.number}
+                        />
+                      )}
                     </Link>
                   </td>
-                  <td className="tabular px-4 py-3 text-[var(--muted)]">
+
+                  <td>
+                    <div className="flex items-center gap-2">
+                      <InvoiceStatusControl
+                        invoiceId={invoice.id}
+                        status={invoice.status}
+                      />
+                      {isOverdue(invoice.status, invoice.dueDate) && (
+                        <span className="badge-vencida" title="La fecha de vencimiento ya pasó">
+                          Vencida
+                        </span>
+                      )}
+                    </div>
+                  </td>
+
+                  <td className="tabular text-[var(--muted)]">
                     {formatDate(invoice.issueDate)}
                   </td>
-                  <td className="px-4 py-3">{invoice.clientName}</td>
-                  <td className="tabular px-4 py-3 text-right font-medium">
+                  <td>{invoice.clientName}</td>
+                  <td className="tabular num text-[0.9375rem] font-semibold">
                     {formatCurrency(invoice.total, invoice.currency)}
+                  </td>
+
+                  <td className="num">
+                    <span className="inline-flex items-center gap-3 text-sm">
+                      <Link
+                        href={`/invoices/${invoice.id}/edit`}
+                        className="text-[var(--muted)] transition hover:text-[var(--foreground)]"
+                      >
+                        Editar
+                      </Link>
+                      <Link
+                        href={`/invoices/${invoice.id}?imprimir=1`}
+                        title="Abre el diálogo de impresión: elige «Guardar como PDF»"
+                        className="text-[var(--muted)] transition hover:text-[var(--foreground)]"
+                      >
+                        PDF
+                      </Link>
+                    </span>
                   </td>
                 </tr>
               ))}

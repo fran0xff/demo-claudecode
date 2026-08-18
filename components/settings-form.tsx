@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { saveSettings } from "@/app/settings/actions";
+import { FormField } from "@/components/form-field";
 import { EMPTY_FORM_STATE } from "@/lib/form-state";
 import { VAT_RATES } from "@/lib/invoice-math";
 import type { SettingsDTO } from "@/lib/invoices";
@@ -19,32 +20,27 @@ export function SettingsForm({ settings }: { settings: SettingsDTO }) {
       )}
 
       <section className="card space-y-4 p-5">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">
-          Datos del emisor
-        </h2>
+        <h2 className="eyebrow">Datos del emisor</h2>
         <p className="text-sm text-[var(--muted)]">
           Se copian en cada factura al crearla, así que cambiarlos no afecta a las ya
           emitidas.
         </p>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="label" htmlFor="issuerName">
-              Nombre o razón social
-            </label>
+          <FormField
+            htmlFor="issuerName"
+            label="Nombre o razón social"
+            error={error("issuerName")}
+          >
             <input
               id="issuerName"
               name="issuerName"
               className="field"
               defaultValue={settings.issuerName}
             />
-            {error("issuerName") && <span className="error-text">{error("issuerName")}</span>}
-          </div>
+          </FormField>
 
-          <div>
-            <label className="label" htmlFor="issuerTaxId">
-              NIF / CIF
-            </label>
+          <FormField htmlFor="issuerTaxId" label="NIF / CIF" error={error("issuerTaxId")}>
             <input
               id="issuerTaxId"
               name="issuerTaxId"
@@ -52,13 +48,14 @@ export function SettingsForm({ settings }: { settings: SettingsDTO }) {
               placeholder="B12345674"
               defaultValue={settings.issuerTaxId}
             />
-            {error("issuerTaxId") && <span className="error-text">{error("issuerTaxId")}</span>}
-          </div>
+          </FormField>
 
-          <div className="sm:col-span-2">
-            <label className="label" htmlFor="issuerAddress">
-              Dirección
-            </label>
+          <FormField
+            htmlFor="issuerAddress"
+            label="Dirección"
+            error={error("issuerAddress")}
+            className="sm:col-span-2"
+          >
             <textarea
               id="issuerAddress"
               name="issuerAddress"
@@ -66,23 +63,19 @@ export function SettingsForm({ settings }: { settings: SettingsDTO }) {
               className="field"
               defaultValue={settings.issuerAddress}
             />
-            {error("issuerAddress") && (
-              <span className="error-text">{error("issuerAddress")}</span>
-            )}
-          </div>
+          </FormField>
         </div>
       </section>
 
       <section className="card space-y-4 p-5">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">
-          Valores por defecto
-        </h2>
+        <h2 className="eyebrow">Valores por defecto</h2>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="label" htmlFor="defaultSeries">
-              Serie de numeración
-            </label>
+          <FormField
+            htmlFor="defaultSeries"
+            label="Serie de numeración"
+            error={error("defaultSeries")}
+          >
             <input
               id="defaultSeries"
               name="defaultSeries"
@@ -90,15 +83,13 @@ export function SettingsForm({ settings }: { settings: SettingsDTO }) {
               maxLength={10}
               defaultValue={settings.defaultSeries}
             />
-            {error("defaultSeries") && (
-              <span className="error-text">{error("defaultSeries")}</span>
-            )}
-          </div>
+          </FormField>
 
-          <div>
-            <label className="label" htmlFor="defaultVatRate">
-              IVA por defecto
-            </label>
+          <FormField
+            htmlFor="defaultVatRate"
+            label="IVA por defecto"
+            error={error("defaultVatRate")}
+          >
             <select
               id="defaultVatRate"
               name="defaultVatRate"
@@ -111,10 +102,7 @@ export function SettingsForm({ settings }: { settings: SettingsDTO }) {
                 </option>
               ))}
             </select>
-            {error("defaultVatRate") && (
-              <span className="error-text">{error("defaultVatRate")}</span>
-            )}
-          </div>
+          </FormField>
         </div>
       </section>
 
