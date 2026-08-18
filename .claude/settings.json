@@ -1,4 +1,27 @@
 {
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/block_files_hook.js"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -Command \"Add-Type -AssemblyName PresentationFramework;[System.Windows.MessageBox]::Show('Claude has stopped.','Claude')\""
+          }
+        ]
+      }
+    ]
+  },
   "permissions": {
     "allow": [
       "Bash(npm run *)",
