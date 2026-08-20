@@ -1,14 +1,39 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import "server-only";
 import { prisma } from "@/lib/db";
-import { setFlash } from "@/lib/flash-cookie";
+import {
+  NotFoundError,
+  SettingsNotConfiguredError,
+  ValidationError,
+  InvoiceNumberConflictError,
+} from "@/lib/services/errors";
 import { computeInvoiceTotals, formatInvoiceNumber } from "@/lib/invoice-math";
-import { isIssuedStatus, STATUS_LABELS } from "@/lib/invoice-status";
-import { getSettings } from "@/lib/invoices";
+import { isIssuedStatus, type InvoiceStatus } from "@/lib/invoice-status";
+import {
+  assignInvoiceNumber,
+  createDraftInvoice,
+  deleteInvoiceById,
+  findInvoiceForIssuing,
+  findInvoiceStatusRow,
+  findLastInvoiceNumber,
+  replaceInvoiceLinesAndHeader,
+  updateInvoiceStatus,
+} from "@/lib/repositories/invoice-repository";
+import { getSettings } from "@/lib/repositories/settings-repository";
 import { fieldErrors, invoiceSchema, type InvoiceInput } from "@/lib/validation";
-import type { FormState } from "@/lib/form-state";
+
+/**
+ * Lógica de negocio de facturas.
+ *
+ * No conoce `Request`/`Response` ni códigos HTTP: devuelve datos en el caso
+ * de éxito y lanza los errores tipados de `lib/services/errors.ts` en el de
+ * fallo. Tampoco toca `setFlash`/`cookies()` — decidir el aviso es cosa de la
+ * ruta, que es quien sabe que está en un contexto HTTP.
+ *
+ * Solo llama a `lib/repositories/*` (nunca a Prisma directamente), salvo
+ * `issueInvoice`, que abre la transacción de reintento porque es quien
+ * orquesta el "leer número, intentar escribir, reintentar si choca" — las
+ * queries de cada paso siguen viviendo en el repositorio.
+ */
 
 /**
  * Los campos de línea llegan como `lines.0.description`, `lines.0.quantity`...
@@ -96,6 +121,16 @@ function isUniqueViolation(error: unknown): boolean {
   );
 }
 
+/** Error "no encontrado" de Prisma (p. ej. borrar un id que ya no existe). */
+function isRecordNotFoundError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: string }).code === "P2025"
+  );
+}
+
 /**
  * Crea la factura como borrador: sin número.
  *
@@ -103,21 +138,15 @@ function isUniqueViolation(error: unknown): boolean {
  * crear, borrar un borrador dejaría un hueco en la serie, y una serie con
  * huecos es justo lo que la numeración no puede tener.
  */
-export async function createInvoice(
-  _prevState: FormState,
-  formData: FormData,
-): Promise<FormState> {
+export async function createInvoice(formData: FormData): Promise<{ id: string }> {
   const parsed = invoiceSchema.safeParse(parseInvoiceForm(formData));
   if (!parsed.success) {
-    return { errors: fieldErrors(parsed.error) };
+    throw new ValidationError(fieldErrors(parsed.error));
   }
 
   const settings = await getSettings();
   if (!settings.issuerName || !settings.issuerTaxId) {
-    return {
-      errors: {},
-      message: "Configura primero los datos del emisor en Ajustes.",
-    };
+    throw new SettingsNotConfiguredError();
   }
 
   const input = parsed.data;
@@ -125,24 +154,15 @@ export async function createInvoice(
   // haya podido enviar el navegador.
   const { common, lines } = invoiceData(input);
 
-  const created = await prisma.invoice.create({
-    data: {
-      ...common,
-      series: input.series,
-      year: input.issueDate.getFullYear(),
-      number: null,
-      status: "BORRADOR",
-      issuerName: settings.issuerName,
-      issuerTaxId: settings.issuerTaxId,
-      issuerAddress: settings.issuerAddress,
-      lines: { create: lines },
-    },
-    select: { id: true },
+  return createDraftInvoice({
+    ...common,
+    series: input.series,
+    year: input.issueDate.getFullYear(),
+    issuerName: settings.issuerName,
+    issuerTaxId: settings.issuerTaxId,
+    issuerAddress: settings.issuerAddress,
+    lines,
   });
-
-  await setFlash("exito", "Borrador creado. Todavía no gasta correlativo.");
-  revalidatePath("/invoices");
-  redirect(`/invoices/${created.id}`);
 }
 
 /**
@@ -150,142 +170,111 @@ export async function createInvoice(
  *
  * El número se busca y se escribe dentro de la misma transacción, pero dos
  * peticiones simultáneas aún podrían pedir el mismo; la restricción única lo
- * rechaza y reintentamos con el siguiente.
+ * rechaza y reintentamos con el siguiente, hasta 3 intentos.
+ *
+ * Devuelve `{issued: null}` si la factura no existe o ya no es un borrador
+ * (reemitir no es un error, es un no-op: no se le asigna un segundo número).
  */
-export async function issueInvoice(formData: FormData): Promise<void> {
-  const id = String(formData.get("id") ?? "");
-  if (!id) return;
-
+export async function issueInvoice(
+  id: string,
+): Promise<{ issued: { series: string; year: number; number: number } | null }> {
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       // La transacción devuelve el número asignado en vez de dejarlo en una
-      // variable de fuera: así el aviso solo sale cuando de verdad se emitió.
+      // variable de fuera: así el llamador solo sabe que se emitió si de
+      // verdad se emitió.
       const issued = await prisma.$transaction(async (tx) => {
-        const invoice = await tx.invoice.findUnique({
-          where: { id },
-          select: { series: true, year: true, status: true },
-        });
-
-        // Ya emitida (o borrada): no hay nada que hacer y, sobre todo, no se
-        // le asigna un segundo número.
+        const invoice = await findInvoiceForIssuing(id, tx);
         if (!invoice || invoice.status !== "BORRADOR") return null;
 
-        const last = await tx.invoice.findFirst({
-          where: { series: invoice.series, year: invoice.year, number: { not: null } },
-          orderBy: { number: "desc" },
-          select: { number: true },
-        });
-
-        const number = (last?.number ?? 0) + 1;
-        await tx.invoice.update({
-          where: { id },
-          data: { number, status: "EMITIDA" },
-        });
+        const last = await findLastInvoiceNumber(invoice.series, invoice.year, tx);
+        const number = (last ?? 0) + 1;
+        await assignInvoiceNumber(id, number, tx);
 
         return { series: invoice.series, year: invoice.year, number };
       });
 
-      if (issued) {
-        await setFlash(
-          "exito",
-          "Factura emitida.",
-          formatInvoiceNumber(issued.series, issued.year, issued.number),
-        );
-      }
-      break;
+      return { issued };
     } catch (error) {
-      if (!isUniqueViolation(error) || attempt === 2) throw error;
+      if (!isUniqueViolation(error)) throw error;
+      if (attempt === 2) throw new InvoiceNumberConflictError();
     }
   }
 
-  revalidatePath("/invoices");
-  revalidatePath(`/invoices/${id}`);
+  // Inalcanzable: cada vuelta del bucle o devuelve o lanza.
+  throw new InvoiceNumberConflictError();
 }
 
 /**
  * Cambia el estado de una factura ya emitida (emitida / enviada / pagada).
  * Volver a BORRADOR no es un movimiento válido: el número ya está gastado.
+ *
+ * No-op (devuelve `null`) si el estado pedido no es uno "emitido", si la
+ * factura no existe o si sigue siendo un borrador.
  */
-export async function setInvoiceStatus(formData: FormData): Promise<void> {
-  const id = String(formData.get("id") ?? "");
-  const status = String(formData.get("status") ?? "");
-  if (!id || !isIssuedStatus(status)) return;
+export async function setInvoiceStatus(
+  id: string,
+  status: string,
+): Promise<{ status: InvoiceStatus; serial?: string } | null> {
+  if (!isIssuedStatus(status)) return null;
 
-  const invoice = await prisma.invoice.findUnique({
-    where: { id },
-    select: { status: true, series: true, year: true, number: true },
-  });
-  if (!invoice || invoice.status === "BORRADOR") return;
+  const invoice = await findInvoiceStatusRow(id);
+  if (!invoice || invoice.status === "BORRADOR") return null;
 
-  await prisma.invoice.update({ where: { id }, data: { status } });
+  await updateInvoiceStatus(id, status);
 
-  await setFlash("exito", `Estado actualizado a ${STATUS_LABELS[status]}.`, serialOf(invoice));
-
-  revalidatePath("/invoices");
-  revalidatePath(`/invoices/${id}`);
+  return { status, serial: serialOf(invoice) };
 }
 
+/**
+ * Reemplaza líneas y cabecera con los importes recalculados en el servidor.
+ *
+ * Un borrador todavía no tiene número, así que puede cambiar de serie y de
+ * año: es la fecha de emisión la que decide en qué año se numerará. Una vez
+ * emitida, ninguna de las tres cosas se toca.
+ */
 export async function updateInvoice(
   id: string,
-  _prevState: FormState,
   formData: FormData,
-): Promise<FormState> {
+): Promise<{ id: string; serial?: string }> {
   const parsed = invoiceSchema.safeParse(parseInvoiceForm(formData));
   if (!parsed.success) {
-    return { errors: fieldErrors(parsed.error) };
+    throw new ValidationError(fieldErrors(parsed.error));
   }
 
-  const existing = await prisma.invoice.findUnique({
-    where: { id },
-    select: { id: true, status: true, series: true, year: true, number: true },
-  });
+  const existing = await findInvoiceStatusRow(id);
   if (!existing) {
-    return { errors: {}, message: "Esa factura ya no existe." };
+    throw new NotFoundError("Esa factura ya no existe.");
   }
 
   const input = parsed.data;
   const { common, lines } = invoiceData(input);
 
-  // Un borrador todavía no tiene número, así que puede cambiar de serie y de
-  // año: es la fecha de emisión la que decide en qué año se numerará. Una vez
-  // emitida, ninguna de las tres cosas se toca.
-  const numbering =
+  const numbering: { series: string; year: number } | Record<string, never> =
     existing.status === "BORRADOR"
       ? { series: input.series, year: input.issueDate.getFullYear() }
       : {};
 
-  await prisma.$transaction([
-    prisma.invoiceLine.deleteMany({ where: { invoiceId: id } }),
-    prisma.invoice.update({
-      where: { id },
-      data: { ...common, ...numbering, lines: { create: lines } },
-    }),
-  ]);
+  await replaceInvoiceLinesAndHeader(id, common, lines, numbering);
 
-  await setFlash("exito", "Cambios guardados.", serialOf(existing));
-
-  revalidatePath("/invoices");
-  revalidatePath(`/invoices/${id}`);
-  redirect(`/invoices/${id}`);
+  return { id, serial: serialOf(existing) };
 }
 
-export async function deleteInvoice(formData: FormData): Promise<void> {
-  const id = String(formData.get("id") ?? "");
-  if (!id) return;
-
-  // Las líneas caen solas por el onDelete: Cascade del esquema. `delete`
-  // devuelve lo borrado, que es la última ocasión de saber cómo se llamaba.
-  const deleted = await prisma.invoice.delete({
-    where: { id },
-    select: { series: true, year: true, number: true },
-  });
-
-  await setFlash(
-    "aviso",
-    deleted.number === null ? "Borrador eliminado." : "Factura eliminada.",
-    serialOf(deleted),
-  );
-
-  revalidatePath("/invoices");
-  redirect("/invoices");
+/**
+ * Borra la factura (las líneas caen en cascada) y describe qué se borró para
+ * que la ruta pueda elegir el mensaje del aviso ("Borrador eliminado." si
+ * nunca tuvo número, "Factura eliminada." si sí).
+ */
+export async function deleteInvoice(
+  id: string,
+): Promise<{ hadNumber: boolean; serial?: string }> {
+  try {
+    const deleted = await deleteInvoiceById(id);
+    return { hadNumber: deleted.number !== null, serial: serialOf(deleted) };
+  } catch (error) {
+    if (isRecordNotFoundError(error)) {
+      throw new NotFoundError("Esa factura ya no existe.");
+    }
+    throw error;
+  }
 }

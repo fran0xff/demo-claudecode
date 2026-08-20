@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef } from "react";
-import { issueInvoice, setInvoiceStatus } from "@/app/invoices/actions";
+import { useRouter } from "next/navigation";
+import { issueInvoiceAction, setInvoiceStatusAction } from "@/lib/api/invoice-client";
 import {
   ISSUED_STATUSES,
   STATUS_LABELS,
@@ -23,10 +24,26 @@ type Props = {
  */
 export function InvoiceStatusControl({ invoiceId, status }: Props) {
   const formRef = useRef<HTMLFormElement>(null);
+  const router = useRouter();
+
+  // Ni emitir ni cambiar de estado navegan a otra pantalla: a diferencia de
+  // `revalidatePath` en el servidor, aquí hace falta refrescar explícitamente
+  // los datos de la página tras la petición. Vive en el componente porque es
+  // el único sitio con acceso al router; `lib/api/invoice-client.ts` se limita
+  // a la petición `fetch`.
+  const handleIssue = async (formData: FormData) => {
+    await issueInvoiceAction(formData);
+    router.refresh();
+  };
+
+  const handleStatusChange = async (formData: FormData) => {
+    await setInvoiceStatusAction(formData);
+    router.refresh();
+  };
 
   if (status === "BORRADOR") {
     return (
-      <form action={issueInvoice} className="no-print">
+      <form action={handleIssue} className="no-print">
         <input type="hidden" name="id" value={invoiceId} />
         <button type="submit" className="btn-primary px-3 py-1 text-xs">
           Emitir
@@ -36,7 +53,7 @@ export function InvoiceStatusControl({ invoiceId, status }: Props) {
   }
 
   return (
-    <form ref={formRef} action={setInvoiceStatus} className="no-print inline-flex items-center">
+    <form ref={formRef} action={handleStatusChange} className="no-print inline-flex items-center">
       <input type="hidden" name="id" value={invoiceId} />
       <select
         // El desplegable no está controlado, y al re-renderizar React le

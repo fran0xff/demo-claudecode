@@ -1,0 +1,300 @@
+[
+  {
+    "number": 1,
+    "issueDate": "2026-01-15T00:00:00",
+    "dueDate": "2026-02-14T00:00:00",
+    "clientName": "Tecnologías Nova S.A.",
+    "clientTaxId": "A34567891",
+    "clientAddress": "Avenida Diagonal 400, 5ª\n08008 Barcelona",
+    "clientEmail": "facturacion@nova.example",
+    "irpfRate": 15,
+    "notes": "Pago por transferencia a ES12 3456 7890 1234 5678 9012.",
+    "lines": [
+      { "description": "Diseño de identidad corporativa", "quantity": 1, "unitPrice": 2400, "vatRate": 21, "discountPct": 0 },
+      { "description": "Sesión de consultoría (horas)", "quantity": 12, "unitPrice": 75, "vatRate": 21, "discountPct": 10 }
+    ]
+  },
+  {
+    "number": 2,
+    "issueDate": "2026-02-03T00:00:00",
+    "dueDate": null,
+    "clientName": "Librería del Prado",
+    "clientTaxId": "12345678Z",
+    "clientAddress": "Plaza del Prado 3\n28014 Madrid",
+    "clientEmail": null,
+    "irpfRate": 0,
+    "notes": null,
+    "lines": [
+      { "description": "Maquetación de catálogo", "quantity": 1, "unitPrice": 950, "vatRate": 21, "discountPct": 0 },
+      { "description": "Impresión de catálogo (unidades)", "quantity": 300, "unitPrice": 3.2, "vatRate": 4, "discountPct": 0 }
+    ]
+  },
+  {
+    "number": 3,
+    "issueDate": "2026-02-20T00:00:00",
+    "dueDate": "2026-03-22T00:00:00",
+    "clientName": "Maderas Elizondo S.L.",
+    "clientTaxId": "B12345674",
+    "clientAddress": "Polígono Gamarra 14\n01013 Vitoria-Gasteiz",
+    "clientEmail": "administracion@maderaselizondo.example",
+    "irpfRate": 0,
+    "notes": "Nueva imagen de marca para la gama de mobiliario de exterior.",
+    "lines": [
+      { "description": "Rediseño de logotipo y manual de marca", "quantity": 1, "unitPrice": 1800, "vatRate": 21, "discountPct": 0 },
+      { "description": "Fotografía de producto (sesiones)", "quantity": 3, "unitPrice": 220, "vatRate": 21, "discountPct": 0 }
+    ]
+  },
+  {
+    "number": 4,
+    "issueDate": "2026-03-05T00:00:00",
+    "dueDate": "2026-04-04T00:00:00",
+    "clientName": "Clínica Dental Riofrío",
+    "clientTaxId": "23456789D",
+    "clientAddress": "Calle Colón 58, 1º\n46004 Valencia",
+    "clientEmail": "recepcion@clinicariofrio.example",
+    "irpfRate": 15,
+    "notes": null,
+    "lines": [
+      { "description": "Diseño de folletos informativos", "quantity": 1, "unitPrice": 480, "vatRate": 21, "discountPct": 0 },
+      { "description": "Gestión de campaña en redes sociales (mes)", "quantity": 1, "unitPrice": 350, "vatRate": 21, "discountPct": 0 }
+    ]
+  },
+  {
+    "number": 5,
+    "issueDate": "2026-03-18T00:00:00",
+    "dueDate": null,
+    "clientName": "Bodegas Cantalapiedra S.L.",
+    "clientTaxId": "B23456783",
+    "clientAddress": "Carretera de Rueda km 3\n47490 Valladolid",
+    "clientEmail": "export@cantalapiedra.example",
+    "irpfRate": 0,
+    "notes": "Incluye maquetación de la nueva contraetiqueta.",
+    "lines": [
+      { "description": "Diseño de etiquetado (nueva añada)", "quantity": 1, "unitPrice": 690, "vatRate": 21, "discountPct": 5 },
+      { "description": "Folleto comercial en papel especial (unidades)", "quantity": 500, "unitPrice": 1.1, "vatRate": 4, "discountPct": 0 }
+    ]
+  },
+  {
+    "number": 6,
+    "issueDate": "2026-04-02T00:00:00",
+    "dueDate": "2026-05-02T00:00:00",
+    "clientName": "Marta Iglesias Soto",
+    "clientTaxId": "34567890V",
+    "clientAddress": "Calle Feria 22\n41003 Sevilla",
+    "clientEmail": "marta.iglesias@example.com",
+    "irpfRate": 15,
+    "notes": "Colaboración puntual, factura de profesional autónoma.",
+    "lines": [
+      { "description": "Retoque y edición de reportaje fotográfico", "quantity": 1, "unitPrice": 620, "vatRate": 21, "discountPct": 0 }
+    ]
+  },
+  {
+    "number": 7,
+    "issueDate": "2026-04-20T00:00:00",
+    "dueDate": "2026-05-20T00:00:00",
+    "clientName": "Grupo Hostelero Levante S.A.",
+    "clientTaxId": "A67890129",
+    "clientAddress": "Explanada de España 9\n03002 Alicante",
+    "clientEmail": "marketing@hostelerolevante.example",
+    "irpfRate": 0,
+    "notes": null,
+    "lines": [
+      { "description": "Diseño de cartas de menú (temporada)", "quantity": 4, "unitPrice": 180, "vatRate": 21, "discountPct": 0 },
+      { "description": "Programa de mano para evento gastronómico", "quantity": 200, "unitPrice": 2.5, "vatRate": 10, "discountPct": 0 }
+    ]
+  },
+  {
+    "number": 8,
+    "issueDate": "2026-05-06T00:00:00",
+    "dueDate": null,
+    "clientName": "Panadería Ochoa",
+    "clientTaxId": "45678901G",
+    "clientAddress": "Calle Ronda 7\n48005 Bilbao",
+    "clientEmail": "pedidos@panaderiaochoa.example",
+    "irpfRate": 7,
+    "notes": "Retención reducida por inicio de actividad como emisor autónomo.",
+    "lines": [
+      { "description": "Diseño de packaging para nueva línea de bollería", "quantity": 1, "unitPrice": 540, "vatRate": 21, "discountPct": 0 },
+      { "description": "Etiquetas adhesivas (unidades)", "quantity": 2000, "unitPrice": 0.09, "vatRate": 4, "discountPct": 0 }
+    ]
+  },
+  {
+    "number": 9,
+    "issueDate": "2026-05-22T00:00:00",
+    "dueDate": "2026-06-21T00:00:00",
+    "clientName": "Talleres Mecánicos Ferro S.L.",
+    "clientTaxId": "B45678901",
+    "clientAddress": "Polígono Roces 4\n33211 Gijón",
+    "clientEmail": "gerencia@talleresferro.example",
+    "irpfRate": 0,
+    "notes": null,
+    "lines": [
+      { "description": "Diseño de rotulación de flota", "quantity": 1, "unitPrice": 1150, "vatRate": 21, "discountPct": 0 },
+      { "description": "Tarjetas de visita (cajas)", "quantity": 5, "unitPrice": 28, "vatRate": 21, "discountPct": 0 }
+    ]
+  },
+  {
+    "number": 10,
+    "issueDate": "2026-06-03T00:00:00",
+    "dueDate": "2026-07-03T00:00:00",
+    "clientName": "Editorial Séneca S.L.",
+    "clientTaxId": "B56789019",
+    "clientAddress": "Calle Ibiza 12\n28009 Madrid",
+    "clientEmail": "produccion@editorialseneca.example",
+    "irpfRate": 0,
+    "notes": "Maquetación de la colección de bolsillo, primer lote de títulos.",
+    "lines": [
+      { "description": "Maquetación de libro (títulos)", "quantity": 6, "unitPrice": 310, "vatRate": 4, "discountPct": 0 },
+      { "description": "Diseño de cubiertas (títulos)", "quantity": 6, "unitPrice": 150, "vatRate": 21, "discountPct": 0 }
+    ]
+  },
+  {
+    "number": 11,
+    "issueDate": "2026-06-19T00:00:00",
+    "dueDate": null,
+    "clientName": "Óptica Villanueva",
+    "clientTaxId": "56789012B",
+    "clientAddress": "Gran Vía 45\n30004 Murcia",
+    "clientEmail": "info@opticavillanueva.example",
+    "irpfRate": 15,
+    "notes": null,
+    "lines": [
+      { "description": "Diseño de escaparate y cartelería de temporada", "quantity": 1, "unitPrice": 395, "vatRate": 21, "discountPct": 0 }
+    ]
+  },
+  {
+    "number": 12,
+    "issueDate": "2026-07-08T00:00:00",
+    "dueDate": "2026-08-07T00:00:00",
+    "clientName": "Distribuciones Atlántico S.L.",
+    "clientTaxId": "B78901238",
+    "clientAddress": "Avenida de Arteixo 100\n15008 A Coruña",
+    "clientEmail": "compras@distribucionesatlantico.example",
+    "irpfRate": 0,
+    "notes": null,
+    "lines": [
+      { "description": "Rediseño de catálogo de temporada", "quantity": 1, "unitPrice": 1950, "vatRate": 21, "discountPct": 15 },
+      { "description": "Fichas técnicas de producto (unidades)", "quantity": 120, "unitPrice": 4.5, "vatRate": 21, "discountPct": 0 }
+    ]
+  },
+  {
+    "number": 13,
+    "issueDate": "2026-07-25T00:00:00",
+    "dueDate": "2026-08-24T00:00:00",
+    "clientName": "Academia de Idiomas Polyglot S.L.",
+    "clientTaxId": "B89012348",
+    "clientAddress": "Paseo de la Independencia 20\n50004 Zaragoza",
+    "clientEmail": "direccion@polyglotacademia.example",
+    "irpfRate": 0,
+    "notes": "Material impreso para la campaña de matriculación.",
+    "lines": [
+      { "description": "Diseño de campaña de matriculación", "quantity": 1, "unitPrice": 780, "vatRate": 21, "discountPct": 0 },
+      { "description": "Folletos y trípticos (unidades)", "quantity": 1000, "unitPrice": 0.65, "vatRate": 10, "discountPct": 0 }
+    ]
+  },
+  {
+    "number": 14,
+    "issueDate": "2026-08-05T00:00:00",
+    "dueDate": "2026-09-04T00:00:00",
+    "clientName": "Javier Roldán Muñoz",
+    "clientTaxId": "87654321X",
+    "clientAddress": "Calle Larios 9\n29005 Málaga",
+    "clientEmail": "jroldan.arquitectura@example.com",
+    "irpfRate": 15,
+    "notes": "Renders y planos de presentación para concurso privado.",
+    "lines": [
+      { "description": "Infografías 3D de proyecto (unidades)", "quantity": 3, "unitPrice": 410, "vatRate": 21, "discountPct": 0 },
+      { "description": "Maquetación de dossier de presentación", "quantity": 1, "unitPrice": 260, "vatRate": 21, "discountPct": 0 }
+    ]
+  },
+  {
+    "number": 15,
+    "issueDate": "2026-08-21T00:00:00",
+    "dueDate": null,
+    "clientName": "Supermercados Rioja S.L.",
+    "clientTaxId": "B90123456",
+    "clientAddress": "Calle Portales 30\n26001 Logroño",
+    "clientEmail": "marketing@supermercadosrioja.example",
+    "irpfRate": 0,
+    "notes": null,
+    "lines": [
+      { "description": "Diseño de folleto de ofertas semanal", "quantity": 4, "unitPrice": 150, "vatRate": 21, "discountPct": 0 },
+      { "description": "Impresión de folletos (miles de unidades)", "quantity": 40, "unitPrice": 18, "vatRate": 4, "discountPct": 0 }
+    ]
+  },
+  {
+    "number": 16,
+    "issueDate": "2026-09-09T00:00:00",
+    "dueDate": "2026-10-09T00:00:00",
+    "clientName": "Constructora Meridiano S.A.",
+    "clientTaxId": "A11223344",
+    "clientAddress": "Camino de Ronda 88\n18004 Granada",
+    "clientEmail": "administracion@constructorameridiano.example",
+    "irpfRate": 0,
+    "notes": null,
+    "lines": [
+      { "description": "Identidad visual para nueva promoción residencial", "quantity": 1, "unitPrice": 2100, "vatRate": 21, "discountPct": 0 },
+      { "description": "Cartel de obra y valla publicitaria", "quantity": 2, "unitPrice": 340, "vatRate": 21, "discountPct": 0 }
+    ]
+  },
+  {
+    "number": 17,
+    "issueDate": "2026-09-28T00:00:00",
+    "dueDate": "2026-10-28T00:00:00",
+    "clientName": "Farmacia Cendán",
+    "clientTaxId": "11223344B",
+    "clientAddress": "Rúa do Príncipe 14\n36202 Vigo",
+    "clientEmail": "farmaciacendan@example.com",
+    "irpfRate": 7,
+    "notes": "Retención reducida por inicio de actividad como emisor autónomo.",
+    "lines": [
+      { "description": "Diseño de escaparate de temporada", "quantity": 1, "unitPrice": 310, "vatRate": 21, "discountPct": 0 },
+      { "description": "Bolsas de papel personalizadas (unidades)", "quantity": 3000, "unitPrice": 0.12, "vatRate": 21, "discountPct": 0 }
+    ]
+  },
+  {
+    "number": 18,
+    "issueDate": "2026-10-12T00:00:00",
+    "dueDate": null,
+    "clientName": "Aromas del Sur S.L.",
+    "clientTaxId": "B22334452",
+    "clientAddress": "Calle Cruz Conde 5\n14001 Córdoba",
+    "clientEmail": "pedidos@aromasdelsur.example",
+    "irpfRate": 0,
+    "notes": null,
+    "lines": [
+      { "description": "Diseño de packaging para línea de velas artesanas", "quantity": 1, "unitPrice": 720, "vatRate": 21, "discountPct": 0 },
+      { "description": "Etiquetas adhesivas (unidades)", "quantity": 1500, "unitPrice": 0.1, "vatRate": 4, "discountPct": 0 }
+    ]
+  },
+  {
+    "number": 19,
+    "issueDate": "2026-11-03T00:00:00",
+    "dueDate": "2026-12-03T00:00:00",
+    "clientName": "Estación de Servicio Poniente S.L.",
+    "clientTaxId": "B33445560",
+    "clientAddress": "Carretera N-340 km 705\n03203 Elche",
+    "clientEmail": "administracion@esponiente.example",
+    "irpfRate": 0,
+    "notes": null,
+    "lines": [
+      { "description": "Diseño de señalética exterior", "quantity": 1, "unitPrice": 890, "vatRate": 21, "discountPct": 0 },
+      { "description": "Vinilos para surtidores (unidades)", "quantity": 8, "unitPrice": 45, "vatRate": 21, "discountPct": 0 }
+    ]
+  },
+  {
+    "number": 20,
+    "issueDate": "2026-12-01T00:00:00",
+    "dueDate": "2026-12-31T00:00:00",
+    "clientName": "Rosa Bermúdez Pardo",
+    "clientTaxId": "99887766P",
+    "clientAddress": "Calle Uría 40\n33003 Oviedo",
+    "clientEmail": "rosa.bermudez@example.com",
+    "irpfRate": 15,
+    "notes": "Traducción jurada de la memoria anual, factura de profesional autónoma.",
+    "lines": [
+      { "description": "Traducción jurada ES-EN (páginas)", "quantity": 45, "unitPrice": 32, "vatRate": 21, "discountPct": 0 },
+      { "description": "Revisión y maquetación bilingüe", "quantity": 1, "unitPrice": 180, "vatRate": 21, "discountPct": 0 }
+    ]
+  }
+]

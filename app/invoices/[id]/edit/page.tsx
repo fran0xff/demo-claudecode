@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { updateInvoice } from "@/app/invoices/actions";
-import { InvoiceForm } from "@/components/invoice-form";
+import { EditInvoiceForm } from "@/components/edit-invoice-form";
 import { InvoiceNumber } from "@/components/invoice-number";
 import { toDateInputValue } from "@/lib/format";
 import { formatInvoiceNumber } from "@/lib/invoice-math";
-import { getInvoice, getSettings } from "@/lib/invoices";
+import { getInvoice } from "@/lib/repositories/invoice-repository";
+import { getSettings } from "@/lib/repositories/settings-repository";
 
 export const dynamic = "force-dynamic";
 
@@ -60,11 +60,10 @@ export default async function EditInvoicePage({
         )}
       </div>
 
-      <InvoiceForm
-        action={updateInvoice.bind(null, invoice.id)}
+      <EditInvoiceForm
+        invoice={invoice}
         settings={settings}
         today={toDateInputValue(new Date())}
-        invoice={invoice}
       />
     </div>
   );

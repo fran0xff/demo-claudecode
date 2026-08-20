@@ -34,13 +34,49 @@ fallback para que el proyecto funcione recién clonado sin `.env`.
 
 ## Arquitectura
 
+### Facturas: rutas REST → servicio → repositorio, separado del frontend
+
+Las mutaciones de facturas (crear, emitir, cambiar estado, editar, borrar) no
+son Server Actions: viven en `app/api/invoices/**` (rutas delgadas) →
+`lib/services/invoice-service.ts` (lógica de negocio) →
+`lib/repositories/invoice-repository.ts` (el único fichero, junto a
+`lib/repositories/settings-repository.ts`, que importa Prisma). Los
+Client Components llaman a esas rutas por `fetch` a través de
+`lib/api/invoice-client.ts`; las páginas (Server Components) leen llamando
+**directamente** al repositorio/servicio, sin pasar por HTTP — el `fetch`
+solo existe para cruzar la frontera cliente→servidor, no como capa de lectura
+interna.
+
+| Método | Ruta | Qué hace |
+| --- | --- | --- |
+| `GET`    | `/api/invoices` | Listado |
+| `POST`   | `/api/invoices` | Crear borrador |
+| `GET`    | `/api/invoices/[id]` | Detalle |
+| `POST`   | `/api/invoices/[id]` | Editar (recalcula totales; no hay PUT/PATCH a propósito) |
+| `DELETE` | `/api/invoices/[id]` | Borrar |
+| `POST`   | `/api/invoices/[id]/issue` | Emitir (asigna correlativo) |
+| `POST`   | `/api/invoices/[id]/status` | Cambiar estado |
+
+El servicio no conoce `Request`/`Response`/cookies: devuelve datos o lanza los
+errores tipados de `lib/services/errors.ts`; es la ruta quien los traduce a
+código HTTP y quien llama a `setFlash` (ver más abajo). Por eso
+`lib/services/invoice-service.ts` se puede testear sin HTTP
+(`tests/invoice-service.test.ts`) y las rutas se testean aparte, invocando
+directamente las funciones `GET`/`POST`/`DELETE` exportadas
+(`tests/invoice-routes.test.ts`).
+
+`app/settings/actions.ts` (`saveSettings`) sigue siendo una Server Action
+clásica — no se movió a REST porque no tiene la complejidad de numeración ni
+estado que motivó separar facturas. No asumas que todas las mutaciones del
+proyecto pasan por `app/api`; solo facturas.
+
 ### El cálculo es el núcleo y vive aparte
 
 `lib/invoice-math.ts` es un módulo **puro** — sin React, sin Prisma. Lo importan
 tanto `components/invoice-form.tsx` (previsualizado en vivo mientras se teclea)
-como `app/invoices/actions.ts` (los importes que realmente se guardan). El
-cliente nunca envía totales: **el servidor siempre recalcula** antes de
-persistir.
+como `lib/services/invoice-service.ts` (los importes que realmente se
+guardan). El cliente nunca envía totales: **el servidor siempre recalcula**
+antes de persistir.
 
 Reglas que no se deben "simplificar":
 
@@ -54,8 +90,9 @@ Reglas que no se deben "simplificar":
 ### El número se gasta al emitir, no al crear
 
 `Invoice.number` es **nullable**: una factura nace como `BORRADOR` sin número y
-lo recibe en `issueInvoice`. Si se numerase al crear, borrar un borrador dejaría
-un hueco en la serie, que es justo lo que la numeración no puede tener.
+lo recibe en `invoiceService.issueInvoice`. Si se numerase al crear, borrar un
+borrador dejaría un hueco en la serie, que es justo lo que la numeración no
+puede tener.
 
 La numeración es por serie y año, se asigna dentro de una transacción, está
 respaldada por `@@unique([series, year, number])` (en SQLite los `NULL` no
@@ -76,9 +113,9 @@ Una factura emitida no puede cambiar retroactivamente, así que:
   hay relación. Cambiar los ajustes no toca las facturas ya emitidas.
 - Los datos del **cliente van embebidos** en `Invoice` (todavía no hay modelo
   `Client`).
-- **Serie, año y correlativo son inmutables una vez emitida**: `updateInvoice`
-  solo toca serie y año mientras es `BORRADOR`, y el formulario muestra el
-  número en solo lectura.
+- **Serie, año y correlativo son inmutables una vez emitida**:
+  `invoiceService.updateInvoice` solo toca serie y año mientras es
+  `BORRADOR`, y el formulario muestra el número en solo lectura.
 - De `EMITIDA`/`ENVIADA`/`PAGADA` **no se vuelve a `BORRADOR`**: el correlativo
   ya está gastado.
 
@@ -90,29 +127,46 @@ lleva `.no-print`; el usuario elige "Guardar como PDF". Así **no hay una segund
 maquetación** que mantener en sintonía con la pantalla. Lo que sea interfaz y no
 documento —botones, estado, "vencida"— tiene que llevar `.no-print`.
 
-### Contrato entre formulario y Server Action
+### Contrato entre formulario y ruta REST
 
 Los inputs de línea se llaman `lines.0.description`, `lines.0.quantity`, etc.
 Ese nombre es un contrato de tres puntas:
 
-1. `components/invoice-form.tsx` lo emite como `name`.
-2. `parseInvoiceForm` en `app/invoices/actions.ts` lo reagrupa en un array.
-3. `fieldErrors` en `lib/validation.ts` devuelve los errores de Zod con esa
+1. `components/invoice-form.tsx` lo emite como `name`. El formulario sigue
+   usando `useActionState` + `<form action={fn}>` nativo: `fn` ya no tiene que
+   ser una Server Action, cualquier `(prevState, formData) => Promise<FormState>`
+   vale, así que el `FormData` que arma el navegador llega intacto.
+2. Las funciones cliente de `lib/api/invoice-client.ts`
+   (`createInvoiceAction`/`updateInvoiceAction`) mandan ese mismo `FormData`
+   tal cual como cuerpo de un `fetch` (`multipart/form-data`) — no lo tocan.
+3. `parseInvoiceForm`, ya en `lib/services/invoice-service.ts`, lo reagrupa en
+   un array a partir de `request.formData()` en la ruta.
+4. `fieldErrors` en `lib/validation.ts` devuelve los errores de Zod con esa
    misma ruta, que es como el formulario los pinta junto a cada campo.
 
-Si cambias el patrón en un sitio, cámbialo en los tres o los errores dejan de
+Si cambias el patrón en un sitio, cámbialo en los cuatro o los errores dejan de
 aparecer **en silencio**.
+
+Una consecuencia de que el envío ahora sea `fetch` en vez de un `<form>`
+enviado de forma nativa a una Server Action: **se perdió la degradación
+progresiva sin JavaScript** en emitir/cambiar estado/borrar/crear/editar. Es
+un trade-off aceptado al separar el backend del frontend, no un descuido.
 
 ### El aviso dura una petición
 
 Crear, guardar, emitir, cambiar de estado y eliminar dejan un aviso arriba de la
-pantalla (`components/flash-banner.tsx`). Va en **cookie** (`lib/flash-cookie.ts`),
-no en el `FormState`: esas acciones terminan en `redirect` o en `revalidatePath`,
-así que lo que devuelven no llega a pintarse.
+pantalla (`components/flash-banner.tsx`). Va en **cookie**
+(`lib/flash-cookie.ts`), no en el `FormState`/la respuesta JSON: para
+facturas, la ruta de `app/api/invoices/**` llama a `setFlash` antes de
+devolver la respuesta; para ajustes, sigue siendo la Server Action
+`saveSettings` quien la llama. En ambos casos la cookie ya está puesta cuando
+el navegador llega a la página siguiente (`redirect()` de `next/navigation`
+funciona igual desde una función cliente invocada por `useActionState` que
+desde una Server Action).
 
 Tres cosas que parecen arbitrarias y no lo son:
 
-- **`<Flash />` va en las páginas destino, no en el layout.** Al redirigir, Next
+- **`<Flash />` va en las páginas destino, no en el layout.** Al navegar, Next
   solo vuelve a renderizar los segmentos que cambian, y el layout no es uno de
   ellos: allí el aviso no aparecería.
 - **Quien borra la cookie es el banner, desde el navegador.** Un Server
@@ -125,12 +179,20 @@ Tres cosas que parecen arbitrarias y no lo son:
 
 ### Fronteras que hay que respetar
 
-- Un fichero `"use server"` **solo puede exportar funciones async**. Por eso
-  `FormState` y `EMPTY_FORM_STATE` viven en `lib/form-state.ts` y no junto a las
-  acciones.
-- `lib/invoices.ts` es la capa de lectura (`server-only`) y convierte los
-  `Decimal` de Prisma a `number` planos: los `Decimal` no cruzan la frontera
-  hacia los Client Components.
+- Un fichero `"use server"` **solo puede exportar funciones async** (sigue
+  aplicando a `app/settings/actions.ts`). Por eso `FormState` y
+  `EMPTY_FORM_STATE` viven en `lib/form-state.ts` y no junto a las acciones.
+- Un Server Component **no puede pasar una función cliente corriente como
+  prop** a un Client Component — solo funciones `"use server"` cruzan esa
+  frontera. Por eso `app/invoices/new/page.tsx` y
+  `app/invoices/[id]/edit/page.tsx` no le pasan `createInvoiceAction`/
+  `updateInvoiceAction` directamente a `InvoiceForm`: lo hacen a través de
+  `components/new-invoice-form.tsx`/`edit-invoice-form.tsx`, pequeños Client
+  Components cuya única razón de existir es esa.
+- `lib/repositories/invoice-repository.ts` y
+  `lib/repositories/settings-repository.ts` son los únicos ficheros que
+  importan Prisma, y convierten los `Decimal` a `number` planos ahí: los
+  `Decimal` no cruzan la frontera hacia los Client Components.
 - **Las páginas que leen la base de datos necesitan
   `export const dynamic = "force-dynamic"`.** Sin eso Next las prerenderiza
   estáticas en el build y se quedan congeladas.
@@ -158,16 +220,29 @@ los 5 dígitos (`1.234.567,50 €` sí los lleva). No lo "arregles".
 ## Tests
 
 `vitest.config.mts` alias `server-only` a un stub vacío (el paquete real lanza
-fuera del entorno de servidor de Next).
+fuera del entorno de servidor de Next) y fuerza `fileParallelism: false`:
+`invoice-service.test.ts` e `invoice-routes.test.ts` montan cada uno su propia
+SQLite temporal aplicando todas las migraciones en `beforeAll`, y en paralelo
+compiten por CPU hasta superar el timeout por defecto — en serie es estable.
+No lo quites para "acelerar" la suite sin comprobar que sigue siendo estable.
 
-`tests/invoice-actions.test.ts` son tests de integración de las Server Actions
-reales: levanta una SQLite temporal aplicando el SQL de la migración, y mockea
-`next/cache` y `next/navigation` (`redirect` lanza un error del que se extrae el
-destino). Cubren alta, correlativos, reinicio por año, series independientes,
-edición y borrado en cascada. Si tocas `actions.ts`, estos son los que importan.
+`tests/invoice-service.test.ts` prueba `lib/services/invoice-service.ts`
+directamente (sin HTTP): alta como borrador, validación de campos, bloqueo si
+Settings no está configurado, emisión con reintento ante colisión de número,
+correlativos consecutivos, reinicio de numeración por año, series
+independientes, no-op al reemitir, transiciones de estado válidas/rechazadas,
+edición con/sin cambio de numeración según `BORRADOR`, y borrado en cascada.
+Si tocas `invoice-service.ts`, estos son los que importan.
 
-Aplica **todas** las migraciones en orden, no solo la inicial: si añades una,
-no hay que tocar el test.
+`tests/invoice-routes.test.ts` prueba las rutas de `app/api/invoices/**`
+invocando directamente las funciones `GET`/`POST`/`DELETE` exportadas (mismo
+patrón que antes con la Server Action: se construye la petición a mano, no
+hace falta un servidor corriendo), y comprueba status codes y el payload
+exacto de cada aviso (tono, mensaje, número de serie) vía el mismo mock de
+`next/headers`.
+
+Ambos aplican **todas** las migraciones en orden, no solo la inicial: si
+añades una, no hay que tocar los tests.
 
 ## Skills
 

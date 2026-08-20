@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import type { InvoiceLineDTO } from "@/lib/invoices";
+import type { InvoiceLineDTO } from "@/lib/repositories/invoice-repository";
 
 /** Una línea del formulario. Todo son strings: es lo que teclea el usuario. */
 export type LineState = {

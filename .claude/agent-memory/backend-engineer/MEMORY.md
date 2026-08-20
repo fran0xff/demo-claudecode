@@ -1,0 +1,2 @@
+- [REST migration phase 2 status](rest_refactor_phase2.md) — invoices Server Actions → REST: repositories done, service+routes done, frontend fetch migration pending
+- [invoice-service.ts signatures](invoice_service_shape.md) — exact function shapes/errors for lib/services/invoice-service.ts, verify before reuse

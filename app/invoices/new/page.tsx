@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { createInvoice } from "@/app/invoices/actions";
-import { InvoiceForm } from "@/components/invoice-form";
+import { NewInvoiceForm } from "@/components/new-invoice-form";
 import { toDateInputValue } from "@/lib/format";
-import { getSettings } from "@/lib/invoices";
+import { getSettings } from "@/lib/repositories/settings-repository";
 
 export const metadata = { title: "Nueva factura" };
 
@@ -28,11 +27,7 @@ export default async function NewInvoicePage() {
         </p>
       </div>
 
-      <InvoiceForm
-        action={createInvoice}
-        settings={settings}
-        today={toDateInputValue(new Date())}
-      />
+      <NewInvoiceForm settings={settings} today={toDateInputValue(new Date())} />
     </div>
   );
 }

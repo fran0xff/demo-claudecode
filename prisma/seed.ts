@@ -1,10 +1,18 @@
 import "dotenv/config";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { prisma } from "../lib/db";
 import { computeInvoiceTotals } from "../lib/invoice-math";
 
 /**
- * Datos de arranque: los ajustes del emisor y dos facturas de ejemplo para no
- * empezar con la pantalla vacía. Es idempotente: se puede ejecutar varias veces.
+ * Datos de arranque: los ajustes del emisor y veinte facturas de ejemplo para
+ * no empezar con la pantalla vacía. Es idempotente: se puede ejecutar varias
+ * veces.
+ *
+ * Las facturas de ejemplo viven en `seed-data/invoices.json` en vez de aquí
+ * hardcodeadas: son datos, no lógica, y así se pueden ampliar sin tocar este
+ * fichero. Las fechas llegan como string ISO (JSON no tiene tipo `Date`) y se
+ * convierten al leer.
  */
 
 const SETTINGS = {
@@ -15,38 +23,44 @@ const SETTINGS = {
   defaultVatRate: 21,
 };
 
-const SAMPLE_INVOICES = [
-  {
-    number: 1,
-    issueDate: new Date("2026-01-15T00:00:00"),
-    dueDate: new Date("2026-02-14T00:00:00"),
-    clientName: "Tecnologías Nova S.A.",
-    clientTaxId: "A58818501",
-    clientAddress: "Avenida Diagonal 400, 5ª\n08008 Barcelona",
-    clientEmail: "facturacion@nova.example",
-    irpfRate: 15,
-    notes: "Pago por transferencia a ES12 3456 7890 1234 5678 9012.",
-    lines: [
-      { description: "Diseño de identidad corporativa", quantity: 1, unitPrice: 2400, vatRate: 21, discountPct: 0 },
-      { description: "Sesión de consultoría (horas)", quantity: 12, unitPrice: 75, vatRate: 21, discountPct: 10 },
-    ],
-  },
-  {
-    number: 2,
-    issueDate: new Date("2026-02-03T00:00:00"),
-    dueDate: null,
-    clientName: "Librería del Prado",
-    clientTaxId: "12345678Z",
-    clientAddress: "Plaza del Prado 3\n28014 Madrid",
-    clientEmail: null,
-    irpfRate: 0,
-    notes: null,
-    lines: [
-      { description: "Maquetación de catálogo", quantity: 1, unitPrice: 950, vatRate: 21, discountPct: 0 },
-      { description: "Impresión de catálogo (unidades)", quantity: 300, unitPrice: 3.2, vatRate: 4, discountPct: 0 },
-    ],
-  },
-];
+type SampleInvoiceLine = {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  vatRate: number;
+  discountPct: number;
+};
+
+type RawSampleInvoice = {
+  number: number;
+  issueDate: string;
+  dueDate: string | null;
+  clientName: string;
+  clientTaxId: string;
+  clientAddress: string;
+  clientEmail: string | null;
+  irpfRate: number;
+  notes: string | null;
+  lines: SampleInvoiceLine[];
+};
+
+type SampleInvoice = Omit<RawSampleInvoice, "issueDate" | "dueDate"> & {
+  issueDate: Date;
+  dueDate: Date | null;
+};
+
+function loadSampleInvoices(): SampleInvoice[] {
+  const path = join(__dirname, "seed-data", "invoices.json");
+  const raw = JSON.parse(readFileSync(path, "utf-8")) as RawSampleInvoice[];
+
+  return raw.map((invoice) => ({
+    ...invoice,
+    issueDate: new Date(invoice.issueDate),
+    dueDate: invoice.dueDate ? new Date(invoice.dueDate) : null,
+  }));
+}
+
+const SAMPLE_INVOICES = loadSampleInvoices();
 
 async function main() {
   await prisma.settings.upsert({

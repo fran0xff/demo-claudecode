@@ -4,7 +4,8 @@ import { InvoiceNumber } from "@/components/invoice-number";
 import { InvoiceStatusControl } from "@/components/invoice-status-control";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { isOverdue } from "@/lib/invoice-status";
-import { getSettings, listInvoices, nextInvoiceNumber } from "@/lib/invoices";
+import { listInvoices, nextInvoiceNumber } from "@/lib/repositories/invoice-repository";
+import { getSettings } from "@/lib/repositories/settings-repository";
 
 export const metadata = { title: "Facturas" };
 

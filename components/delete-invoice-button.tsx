@@ -1,7 +1,7 @@
 "use client";
 
 import { useFormStatus } from "react-dom";
-import { deleteInvoice } from "@/app/invoices/actions";
+import { deleteInvoiceAction } from "@/lib/api/invoice-client";
 
 type Props = {
   invoiceId: string;
@@ -14,7 +14,7 @@ export function DeleteInvoiceButton({ invoiceId, confirmLabel }: Props) {
   return (
     <form
       className="no-print"
-      action={deleteInvoice}
+      action={deleteInvoiceAction}
       onSubmit={(event) => {
         const confirmed = window.confirm(
           `¿Eliminar ${confirmLabel}? Esta acción no se puede deshacer.`,

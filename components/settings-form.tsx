@@ -5,7 +5,7 @@ import { saveSettings } from "@/app/settings/actions";
 import { FormField } from "@/components/form-field";
 import { EMPTY_FORM_STATE } from "@/lib/form-state";
 import { VAT_RATES } from "@/lib/invoice-math";
-import type { SettingsDTO } from "@/lib/invoices";
+import type { SettingsDTO } from "@/lib/repositories/settings-repository";
 
 export function SettingsForm({ settings }: { settings: SettingsDTO }) {
   const [state, formAction, pending] = useActionState(saveSettings, EMPTY_FORM_STATE);

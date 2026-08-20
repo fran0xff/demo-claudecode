@@ -13,5 +13,10 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/**/*.test.ts"],
+    // `invoice-service.test.ts` e `invoice-routes.test.ts` montan cada uno su
+    // propia SQLite temporal aplicando todas las migraciones en `beforeAll`.
+    // En paralelo compiten por CPU y el montaje puede superar el timeout por
+    // defecto; en serie es estable sin tocar los tests.
+    fileParallelism: false,
   },
 });

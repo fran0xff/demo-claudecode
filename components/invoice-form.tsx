@@ -9,7 +9,8 @@ import { useInvoiceLines } from "@/hooks/use-invoice-lines";
 import { parseAmountInput, toDateInputValue } from "@/lib/format";
 import { EMPTY_FORM_STATE, type FormState } from "@/lib/form-state";
 import { computeInvoiceTotals, formatInvoiceNumber } from "@/lib/invoice-math";
-import type { InvoiceDTO, SettingsDTO } from "@/lib/invoices";
+import type { InvoiceDTO } from "@/lib/repositories/invoice-repository";
+import type { SettingsDTO } from "@/lib/repositories/settings-repository";
 
 type Props = {
   action: (state: FormState, formData: FormData) => Promise<FormState>;

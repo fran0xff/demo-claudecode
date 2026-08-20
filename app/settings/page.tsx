@@ -1,5 +1,5 @@
 import { SettingsForm } from "@/components/settings-form";
-import { getSettings } from "@/lib/invoices";
+import { getSettings } from "@/lib/repositories/settings-repository";
 
 export const metadata = { title: "Ajustes" };
 

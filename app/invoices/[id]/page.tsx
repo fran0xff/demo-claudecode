@@ -9,7 +9,7 @@ import { AutoPrint, PrintButton } from "@/components/print-button";
 import { formatAmount, formatCurrency, formatDate, formatPercent } from "@/lib/format";
 import { computeInvoiceTotals, formatInvoiceNumber } from "@/lib/invoice-math";
 import { isOverdue } from "@/lib/invoice-status";
-import { getInvoice, nextInvoiceNumber } from "@/lib/invoices";
+import { getInvoice, nextInvoiceNumber } from "@/lib/repositories/invoice-repository";
 
 export const dynamic = "force-dynamic";
 
