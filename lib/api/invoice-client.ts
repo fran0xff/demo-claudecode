@@ -25,6 +25,18 @@ async function errorFormState(response: Response): Promise<FormState> {
   }
 }
 
+/** Mismo cuerpo de error que `errorFormState`, pero solo el mensaje: lo que
+ * consumen los controles que no llevan campos propios que pintar (emitir,
+ * cambiar estado, borrar). */
+async function errorMessage(response: Response): Promise<string> {
+  try {
+    const body = (await response.json()) as { message?: string };
+    return body.message ?? ERROR_GENERICO.message!;
+  } catch {
+    return ERROR_GENERICO.message!;
+  }
+}
+
 export async function createInvoiceAction(
   _prevState: FormState,
   formData: FormData,
@@ -59,25 +71,59 @@ export async function updateInvoiceAction(
   redirect(`/invoices/${id}`);
 }
 
-/** El aviso ya queda listo en cookie desde la propia ruta; aquí solo se dispara la petición. */
-export async function issueInvoiceAction(formData: FormData): Promise<void> {
+/**
+ * El aviso de éxito ya queda listo en cookie desde la propia ruta. Aquí solo
+ * se dispara la petición y se devuelve el mensaje de error si falla — `null`
+ * en éxito — para que el componente que llama pueda enseñarlo: sin esto, un
+ * 409 (correlativo en conflicto), un 500 o la red caída pasaban en silencio y
+ * el desplegable/botón simplemente volvían a su valor anterior sin explicar
+ * por qué.
+ */
+export async function issueInvoiceAction(formData: FormData): Promise<string | null> {
   const id = String(formData.get("id") ?? "");
-  if (!id) return;
+  if (!id) return null;
 
-  await fetch(`/api/invoices/${id}/issue`, { method: "POST" });
+  let response: Response;
+  try {
+    response = await fetch(`/api/invoices/${id}/issue`, { method: "POST" });
+  } catch {
+    return ERROR_GENERICO.message!;
+  }
+
+  return response.ok ? null : errorMessage(response);
 }
 
-export async function setInvoiceStatusAction(formData: FormData): Promise<void> {
+export async function setInvoiceStatusAction(formData: FormData): Promise<string | null> {
   const id = String(formData.get("id") ?? "");
-  if (!id) return;
+  if (!id) return null;
 
-  await fetch(`/api/invoices/${id}/status`, { method: "POST", body: formData });
+  let response: Response;
+  try {
+    response = await fetch(`/api/invoices/${id}/status`, { method: "POST", body: formData });
+  } catch {
+    return ERROR_GENERICO.message!;
+  }
+
+  return response.ok ? null : errorMessage(response);
 }
 
-export async function deleteInvoiceAction(formData: FormData): Promise<void> {
+/** Si el borrado falla, no se redirige: redirigir igualmente haría pensar que
+ * se borró cuando la factura sigue ahí. */
+export async function deleteInvoiceAction(
+  _prevMessage: string | null,
+  formData: FormData,
+): Promise<string | null> {
   const id = String(formData.get("id") ?? "");
-  if (!id) return;
+  if (!id) return null;
 
-  await fetch(`/api/invoices/${id}`, { method: "DELETE" });
+  let response: Response;
+  try {
+    response = await fetch(`/api/invoices/${id}`, { method: "DELETE" });
+  } catch {
+    return ERROR_GENERICO.message!;
+  }
+
+  if (!response.ok) return errorMessage(response);
+
   redirect("/invoices");
 }

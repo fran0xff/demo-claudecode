@@ -1,2 +1,3 @@
-- [REST migration phase 2 status](rest_refactor_phase2.md) — invoices Server Actions → REST: repositories done, service+routes done, frontend fetch migration pending
+- [REST migration status](rest_refactor_phase2.md) — invoices Server Actions → REST: all 3 phases done; audit findings and two items needing human approval
 - [invoice-service.ts signatures](invoice_service_shape.md) — exact function shapes/errors for lib/services/invoice-service.ts, verify before reuse
+- [formData() needs its own try/catch](nextjs_formdata_try_catch.md) — request.formData() throws unshaped 500s if not wrapped separately from the service-call try/catch

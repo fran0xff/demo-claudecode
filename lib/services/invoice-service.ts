@@ -15,8 +15,12 @@ import {
   findInvoiceForIssuing,
   findInvoiceStatusRow,
   findLastInvoiceNumber,
+  getInvoice as getInvoiceRow,
+  listInvoices as listInvoiceRows,
   replaceInvoiceLinesAndHeader,
   updateInvoiceStatus,
+  type InvoiceDTO,
+  type InvoiceSummary,
 } from "@/lib/repositories/invoice-repository";
 import { getSettings } from "@/lib/repositories/settings-repository";
 import { fieldErrors, invoiceSchema, type InvoiceInput } from "@/lib/validation";
@@ -129,6 +133,16 @@ function isRecordNotFoundError(error: unknown): boolean {
     "code" in error &&
     (error as { code?: string }).code === "P2025"
   );
+}
+
+/** Lectura de una factura por id, tal cual la sirve la ruta `GET /api/invoices/[id]`. */
+export async function getInvoice(id: string): Promise<InvoiceDTO | null> {
+  return getInvoiceRow(id);
+}
+
+/** Listado de facturas para `GET /api/invoices`. Sin lógica que orquestar. */
+export async function listInvoices(): Promise<InvoiceSummary[]> {
+  return listInvoiceRows();
 }
 
 /**

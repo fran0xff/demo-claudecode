@@ -1,6 +1,5 @@
 import type { NextRequest } from "next/server";
 import { setFlash } from "@/lib/flash-cookie";
-import { getInvoice } from "@/lib/repositories/invoice-repository";
 import * as invoiceService from "@/lib/services/invoice-service";
 import { NotFoundError, ValidationError } from "@/lib/services/errors";
 
@@ -9,7 +8,7 @@ type RouteParams = { params: Promise<{ id: string }> };
 export async function GET(_request: NextRequest, { params }: RouteParams) {
   const { id } = await params;
 
-  const invoice = await getInvoice(id);
+  const invoice = await invoiceService.getInvoice(id);
   if (!invoice) {
     return Response.json({ message: "No encontrada." }, { status: 404 });
   }
@@ -24,7 +23,13 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
  */
 export async function POST(request: NextRequest, { params }: RouteParams) {
   const { id } = await params;
-  const formData = await request.formData();
+
+  let formData: FormData;
+  try {
+    formData = await request.formData();
+  } catch {
+    return Response.json({ errors: {}, message: "Cuerpo de la petición no válido." }, { status: 400 });
+  }
 
   try {
     const { serial } = await invoiceService.updateInvoice(id, formData);
@@ -35,7 +40,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return Response.json({ errors: error.errors }, { status: 400 });
     }
     if (error instanceof NotFoundError) {
-      return Response.json({ errors: {}, message: error.message }, { status: 400 });
+      return Response.json({ errors: {}, message: error.message }, { status: 404 });
     }
     return Response.json({ errors: {}, message: "Error inesperado." }, { status: 500 });
   }

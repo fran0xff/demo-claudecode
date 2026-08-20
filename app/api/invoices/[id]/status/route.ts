@@ -14,7 +14,13 @@ type RouteParams = { params: Promise<{ id: string }> };
  */
 export async function POST(request: NextRequest, { params }: RouteParams) {
   const { id } = await params;
-  const formData = await request.formData();
+
+  let formData: FormData;
+  try {
+    formData = await request.formData();
+  } catch {
+    return Response.json({ message: "Cuerpo de la petición no válido." }, { status: 400 });
+  }
   const status = String(formData.get("status") ?? "");
 
   try {

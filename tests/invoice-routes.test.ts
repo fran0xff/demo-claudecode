@@ -102,6 +102,20 @@ function formRequest(url: string, formData: FormData, method = "POST"): NextRequ
   return new NextRequest(url, { method, body: formData });
 }
 
+/**
+ * Un cuerpo que no es `multipart/form-data` ni `application/x-www-form-urlencoded`:
+ * `request.formData()` lanza un `TypeError` al parsearlo, que las rutas deben
+ * convertir en un 400 con forma conocida en vez de dejarlo escapar como un
+ * 500 sin forma.
+ */
+function malformedBodyRequest(url: string): NextRequest {
+  return new NextRequest(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ foo: "bar" }),
+  });
+}
+
 function paramsOf(id: string) {
   return { params: Promise.resolve({ id }) };
 }
@@ -223,6 +237,16 @@ describe("POST /api/invoices", () => {
     expect(body.message).toMatch(/Ajustes/);
     expect(await prisma.invoice.count()).toBe(0);
   });
+
+  it("responde 400 con forma conocida si el cuerpo no es FormData, en vez de un 500 sin forma", async () => {
+    const response = await invoicesRoute.POST(
+      malformedBodyRequest("http://localhost/api/invoices"),
+    );
+
+    expect(response.status).toBe(400);
+    const body = (await response.json()) as { message?: string };
+    expect(body.message).toMatch(/no válido/);
+  });
 });
 
 describe("GET /api/invoices/[id]", () => {
@@ -319,15 +343,28 @@ describe("POST /api/invoices/[id] (editar)", () => {
     expect(body.errors["lines.0.quantity"]).toMatch(/mayor que 0/);
   });
 
-  it("responde 400 si la factura ya no existe", async () => {
+  it("responde 404 si la factura ya no existe", async () => {
     const response = await invoiceRoute.POST(
       formRequest("http://localhost/api/invoices/no-existe", invoiceForm()),
       paramsOf("no-existe"),
     );
 
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(404);
     const body = (await response.json()) as { message?: string };
     expect(body.message).toMatch(/ya no existe/);
+  });
+
+  it("responde 400 con forma conocida si el cuerpo no es FormData, en vez de un 500 sin forma", async () => {
+    const id = await createDraft();
+
+    const response = await invoiceRoute.POST(
+      malformedBodyRequest(`http://localhost/api/invoices/${id}`),
+      paramsOf(id),
+    );
+
+    expect(response.status).toBe(400);
+    const body = (await response.json()) as { message?: string };
+    expect(body.message).toMatch(/no válido/);
   });
 });
 
@@ -490,6 +527,19 @@ describe("POST /api/invoices/[id]/status", () => {
     );
 
     expect((await prisma.invoice.findUniqueOrThrow({ where: { id } })).status).toBe("BORRADOR");
+  });
+
+  it("responde 400 con forma conocida si el cuerpo no es FormData, en vez de un 500 sin forma", async () => {
+    const id = await createAndIssue();
+
+    const response = await statusRoute.POST(
+      malformedBodyRequest(`http://localhost/api/invoices/${id}/status`),
+      paramsOf(id),
+    );
+
+    expect(response.status).toBe(400);
+    const body = (await response.json()) as { message?: string };
+    expect(body.message).toMatch(/no válido/);
   });
 });
 

@@ -1,12 +1,11 @@
 import type { NextRequest } from "next/server";
 import { setFlash } from "@/lib/flash-cookie";
-import { listInvoices } from "@/lib/repositories/invoice-repository";
 import * as invoiceService from "@/lib/services/invoice-service";
 import { SettingsNotConfiguredError, ValidationError } from "@/lib/services/errors";
 
 /** Lista de facturas para la pantalla `/invoices`. Sin lógica que orquestar. */
 export async function GET() {
-  const invoices = await listInvoices();
+  const invoices = await invoiceService.listInvoices();
   return Response.json(invoices);
 }
 
@@ -15,7 +14,12 @@ export async function GET() {
  * `POST /api/invoices/[id]/issue`.
  */
 export async function POST(request: NextRequest) {
-  const formData = await request.formData();
+  let formData: FormData;
+  try {
+    formData = await request.formData();
+  } catch {
+    return Response.json({ errors: {}, message: "Cuerpo de la petición no válido." }, { status: 400 });
+  }
 
   try {
     const { id } = await invoiceService.createInvoice(formData);

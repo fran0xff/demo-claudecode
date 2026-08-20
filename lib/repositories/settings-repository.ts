@@ -38,3 +38,12 @@ export async function getSettings(): Promise<SettingsDTO> {
     defaultVatRate: num(settings.defaultVatRate),
   };
 }
+
+/** Crea o reemplaza la fila única de ajustes (id = 1). */
+export async function upsertSettings(data: SettingsDTO): Promise<void> {
+  await prisma.settings.upsert({
+    where: { id: 1 },
+    update: data,
+    create: { id: 1, ...data },
+  });
+}

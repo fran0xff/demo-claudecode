@@ -33,6 +33,27 @@ export function InvoiceForm({ action, settings, today, invoice }: Props) {
   );
   const [irpfRate, setIrpfRate] = useState(String(invoice?.irpfRate ?? 0));
 
+  // Controlados (en vez de `defaultValue`) para sobrevivir al fallo de
+  // validación: tras cualquier `action` de formulario que resuelve sin lanzar
+  // -éxito o error de Zod por igual-, React 19 resetea los campos no
+  // controlados de un `<form action={fn}>` a su `defaultValue` de montaje. Con
+  // `defaultValue` (como estaban antes) eso vaciaba nombre, NIF, dirección,
+  // notas, etc. cada vez que el servidor devolvía un error de validación. Al
+  // controlarlos, React reafirma su `value` en cada render y el reseteo no
+  // llega a verse.
+  const [series, setSeries] = useState(invoice ? invoice.series : settings.defaultSeries);
+  const [issueDate, setIssueDate] = useState(
+    invoice ? toDateInputValue(invoice.issueDate) : today,
+  );
+  const [dueDate, setDueDate] = useState(
+    invoice?.dueDate ? toDateInputValue(invoice.dueDate) : "",
+  );
+  const [clientName, setClientName] = useState(invoice?.clientName ?? "");
+  const [clientTaxId, setClientTaxId] = useState(invoice?.clientTaxId ?? "");
+  const [clientAddress, setClientAddress] = useState(invoice?.clientAddress ?? "");
+  const [clientEmail, setClientEmail] = useState(invoice?.clientEmail ?? "");
+  const [notes, setNotes] = useState(invoice?.notes ?? "");
+
   // Previsualizado en vivo. El servidor recalcula al guardar y es quien manda.
   const totals = useMemo(
     () =>
@@ -77,7 +98,8 @@ export function InvoiceForm({ action, settings, today, invoice }: Props) {
                 id="series"
                 name="series"
                 className="field"
-                defaultValue={invoice ? invoice.series : settings.defaultSeries}
+                value={series}
+                onChange={(event) => setSeries(event.target.value)}
                 maxLength={10}
               />
             )}
@@ -89,7 +111,8 @@ export function InvoiceForm({ action, settings, today, invoice }: Props) {
               name="issueDate"
               type="date"
               className="field"
-              defaultValue={invoice ? toDateInputValue(invoice.issueDate) : today}
+              value={issueDate}
+              onChange={(event) => setIssueDate(event.target.value)}
             />
           </FormField>
 
@@ -104,7 +127,8 @@ export function InvoiceForm({ action, settings, today, invoice }: Props) {
               name="dueDate"
               type="date"
               className="field"
-              defaultValue={invoice?.dueDate ? toDateInputValue(invoice.dueDate) : ""}
+              value={dueDate}
+              onChange={(event) => setDueDate(event.target.value)}
             />
           </FormField>
         </div>
@@ -123,7 +147,8 @@ export function InvoiceForm({ action, settings, today, invoice }: Props) {
               id="clientName"
               name="clientName"
               className="field"
-              defaultValue={invoice?.clientName ?? ""}
+              value={clientName}
+              onChange={(event) => setClientName(event.target.value)}
             />
           </FormField>
 
@@ -133,7 +158,8 @@ export function InvoiceForm({ action, settings, today, invoice }: Props) {
               name="clientTaxId"
               className="field"
               placeholder="B12345674"
-              defaultValue={invoice?.clientTaxId ?? ""}
+              value={clientTaxId}
+              onChange={(event) => setClientTaxId(event.target.value)}
             />
           </FormField>
 
@@ -143,7 +169,8 @@ export function InvoiceForm({ action, settings, today, invoice }: Props) {
               name="clientAddress"
               rows={2}
               className="field"
-              defaultValue={invoice?.clientAddress ?? ""}
+              value={clientAddress}
+              onChange={(event) => setClientAddress(event.target.value)}
             />
           </FormField>
 
@@ -158,7 +185,8 @@ export function InvoiceForm({ action, settings, today, invoice }: Props) {
               name="clientEmail"
               type="email"
               className="field"
-              defaultValue={invoice?.clientEmail ?? ""}
+              value={clientEmail}
+              onChange={(event) => setClientEmail(event.target.value)}
             />
           </FormField>
         </div>
@@ -214,7 +242,8 @@ export function InvoiceForm({ action, settings, today, invoice }: Props) {
               rows={3}
               className="field"
               placeholder="Forma de pago, número de cuenta, condiciones…"
-              defaultValue={invoice?.notes ?? ""}
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
             />
           </FormField>
         </div>
