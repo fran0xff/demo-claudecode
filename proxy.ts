@@ -1,13 +1,18 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { AUTH_COOKIE_NAME } from "@/lib/security/auth-cookie-name";
 import { verifyAuthToken } from "@/lib/security/jwt";
+import { checkApiRateLimit, clientKey } from "@/lib/security/rate-limit";
 
 /**
  * Único punto de protección de rutas: nada bajo `app/api/invoices/**`,
  * `app/api/settings`, `app/invoices/**` o `app/settings/**` tiene que
  * acordarse de comprobar sesión por su cuenta — lo hace este `matcher`. Una
  * ruta nueva que se añada mañana bajo esos prefijos queda protegida sin que
- * nadie tenga que recordar añadir el chequeo.
+ * nadie tenga que recordar añadir el chequeo. Mismo razonamiento para el
+ * límite de peticiones de `checkApiRateLimit`: una sola vez aquí cubre todo
+ * `/api/**`, en vez de que cada ruta nueva tenga que acordarse de aplicarlo
+ * (como sí tiene que hacerlo `/api/auth/login` a propósito, con su propio
+ * límite mucho más estricto — ver `lib/security/rate-limit.ts`).
  *
  * Dos canales de credencial, cada uno para lo suyo:
  * - `/api/**`: header `Authorization: Bearer <token>` (lo manda `authFetch`).
@@ -31,6 +36,14 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (matchesPrefix(pathname, API_PREFIXES)) {
+    const limit = checkApiRateLimit(clientKey(request));
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { message: "Demasiadas peticiones. Inténtalo más tarde." },
+        { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
+      );
+    }
+
     const header = request.headers.get("authorization");
     const token = header?.startsWith("Bearer ") ? header.slice(7) : null;
     const payload = token ? await verifyAuthToken(token) : null;
