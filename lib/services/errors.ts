@@ -52,3 +52,17 @@ export class InvoiceNumberConflictError extends Error {
     this.name = "InvoiceNumberConflictError";
   }
 }
+
+/**
+ * Email o contraseña incorrectos al iniciar sesión. Mismo mensaje tanto si el
+ * email no existe como si la contraseña es la que no coincide, para no dar
+ * pistas de qué email sí tiene cuenta (enumeración de usuarios).
+ */
+export class InvalidCredentialsError extends Error {
+  readonly code = "INVALID_CREDENTIALS";
+
+  constructor(message = "Email o contraseña incorrectos.") {
+    super(message);
+    this.name = "InvalidCredentialsError";
+  }
+}

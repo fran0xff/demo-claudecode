@@ -51,7 +51,7 @@ const taxId = z
   .transform(normalizeTaxId);
 
 export const invoiceLineSchema = z.object({
-  description: z.string().trim().min(1, "La descripción es obligatoria"),
+  description: z.string().trim().min(1, "La descripción es obligatoria").max(200, "La descripción es demasiado larga"),
   quantity: numeric(z.number().gt(0, "La cantidad debe ser mayor que 0")),
   unitPrice: numeric(z.number().min(0, "El precio no puede ser negativo")),
   vatRate: numeric(
@@ -70,9 +70,9 @@ export const invoiceSchema = z.object({
   series: z.string().trim().min(1, "La serie es obligatoria").max(10, "Serie demasiado larga"),
   issueDate: dateFromInput,
   dueDate: optionalDateFromInput,
-  clientName: z.string().trim().min(1, "El nombre del cliente es obligatorio"),
+  clientName: z.string().trim().min(1, "El nombre del cliente es obligatorio").max(200, "El nombre del cliente es demasiado largo"),
   clientTaxId: taxId,
-  clientAddress: z.string().trim().min(1, "La dirección del cliente es obligatoria"),
+  clientAddress: z.string().trim().min(1, "La dirección del cliente es obligatoria").max(300, "La dirección del cliente es demasiado larga"),
   clientEmail: optionalText(z.string().email("Email no válido")),
   irpfRate: numeric(
     z
@@ -82,13 +82,59 @@ export const invoiceSchema = z.object({
     { fallback: 0 },
   ),
   notes: optionalText(z.string().max(2000, "Las notas son demasiado largas")),
-  lines: z.array(invoiceLineSchema).min(1, "Añade al menos una línea a la factura"),
+  lines: z
+    .array(invoiceLineSchema)
+    .min(1, "Añade al menos una línea a la factura")
+    .max(200, "Demasiadas líneas en la factura"),
 });
 
+export const loginSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, "El email es obligatorio")
+    .max(254, "Email demasiado largo")
+    .email("Email no válido"),
+  password: z.string().min(1, "La contraseña es obligatoria").max(200, "Contraseña demasiado larga"),
+});
+
+/** Compartida con `prisma/create-user.ts`, que la importa en vez de redeclararla. */
+export const MIN_PASSWORD_LENGTH = 12;
+
+const newPassword = z
+  .string()
+  .min(MIN_PASSWORD_LENGTH, `La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres`)
+  .max(200, "Contraseña demasiado larga");
+
+const passwordsMatch = {
+  message: "Las contraseñas no coinciden",
+  path: ["confirmPassword"],
+};
+
+export const createUserSchema = z
+  .object({
+    email: z
+      .string()
+      .trim()
+      .min(1, "El email es obligatorio")
+      .max(254, "Email demasiado largo")
+      .email("Email no válido"),
+    password: newPassword,
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, passwordsMatch);
+
+export const changePasswordSchema = z
+  .object({
+    password: newPassword,
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, passwordsMatch);
+
 export const settingsSchema = z.object({
-  issuerName: z.string().trim().min(1, "El nombre del emisor es obligatorio"),
+  issuerName: z.string().trim().min(1, "El nombre del emisor es obligatorio").max(200, "El nombre del emisor es demasiado largo"),
   issuerTaxId: taxId,
-  issuerAddress: z.string().trim().min(1, "La dirección del emisor es obligatoria"),
+  issuerAddress: z.string().trim().min(1, "La dirección del emisor es obligatoria").max(300, "La dirección del emisor es demasiado larga"),
   defaultSeries: z.string().trim().min(1, "La serie es obligatoria").max(10, "Serie demasiado larga"),
   defaultVatRate: numeric(z.number().min(0).max(100), { fallback: 21 }),
 });
@@ -96,6 +142,9 @@ export const settingsSchema = z.object({
 export type InvoiceInput = z.infer<typeof invoiceSchema>;
 export type InvoiceLineInput = z.infer<typeof invoiceLineSchema>;
 export type SettingsInput = z.infer<typeof settingsSchema>;
+export type LoginInput = z.infer<typeof loginSchema>;
+export type CreateUserInput = z.infer<typeof createUserSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 
 /**
  * Aplana los errores de Zod a `{ "lines.0.quantity": "mensaje" }`, que es lo

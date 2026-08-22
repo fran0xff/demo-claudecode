@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { LogoutButton } from "@/components/logout-button";
 import { NavToggle } from "@/components/nav-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NAV_INIT_SCRIPT } from "@/lib/nav";
@@ -40,6 +41,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               <Link href="/settings" className="transition hover:text-[var(--foreground)]">
                 Ajustes
               </Link>
+              <Link href="/users" className="transition hover:text-[var(--foreground)]">
+                Usuarios
+              </Link>
+              <LogoutButton />
               <ThemeToggle />
               <NavToggle variant="inline" />
             </div>

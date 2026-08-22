@@ -1,14 +1,14 @@
 "use client";
 
 import { useActionState } from "react";
-import { saveSettings } from "@/app/settings/actions";
+import { saveSettingsAction } from "@/lib/api/settings-client";
 import { FormField } from "@/components/form-field";
 import { EMPTY_FORM_STATE } from "@/lib/form-state";
 import { VAT_RATES } from "@/lib/invoice-math";
 import type { SettingsDTO } from "@/lib/repositories/settings-repository";
 
 export function SettingsForm({ settings }: { settings: SettingsDTO }) {
-  const [state, formAction, pending] = useActionState(saveSettings, EMPTY_FORM_STATE);
+  const [state, formAction, pending] = useActionState(saveSettingsAction, EMPTY_FORM_STATE);
   const error = (field: string) => state.errors[field];
 
   return (

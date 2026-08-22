@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { authFetch, handleUnauthorized } from "@/lib/api/auth-fetch";
 import type { FormState } from "@/lib/form-state";
 
 /**
@@ -43,10 +44,11 @@ export async function createInvoiceAction(
 ): Promise<FormState> {
   let response: Response;
   try {
-    response = await fetch("/api/invoices", { method: "POST", body: formData });
+    response = await authFetch("/api/invoices", { method: "POST", body: formData });
   } catch {
     return ERROR_GENERICO;
   }
+  if (response.status === 401) handleUnauthorized();
 
   if (!response.ok) return errorFormState(response);
 
@@ -61,10 +63,11 @@ export async function updateInvoiceAction(
 ): Promise<FormState> {
   let response: Response;
   try {
-    response = await fetch(`/api/invoices/${id}`, { method: "POST", body: formData });
+    response = await authFetch(`/api/invoices/${id}`, { method: "POST", body: formData });
   } catch {
     return ERROR_GENERICO;
   }
+  if (response.status === 401) handleUnauthorized();
 
   if (!response.ok) return errorFormState(response);
 
@@ -85,10 +88,11 @@ export async function issueInvoiceAction(formData: FormData): Promise<string | n
 
   let response: Response;
   try {
-    response = await fetch(`/api/invoices/${id}/issue`, { method: "POST" });
+    response = await authFetch(`/api/invoices/${id}/issue`, { method: "POST" });
   } catch {
     return ERROR_GENERICO.message!;
   }
+  if (response.status === 401) handleUnauthorized();
 
   return response.ok ? null : errorMessage(response);
 }
@@ -99,10 +103,11 @@ export async function setInvoiceStatusAction(formData: FormData): Promise<string
 
   let response: Response;
   try {
-    response = await fetch(`/api/invoices/${id}/status`, { method: "POST", body: formData });
+    response = await authFetch(`/api/invoices/${id}/status`, { method: "POST", body: formData });
   } catch {
     return ERROR_GENERICO.message!;
   }
+  if (response.status === 401) handleUnauthorized();
 
   return response.ok ? null : errorMessage(response);
 }
@@ -118,10 +123,11 @@ export async function deleteInvoiceAction(
 
   let response: Response;
   try {
-    response = await fetch(`/api/invoices/${id}`, { method: "DELETE" });
+    response = await authFetch(`/api/invoices/${id}`, { method: "DELETE" });
   } catch {
     return ERROR_GENERICO.message!;
   }
+  if (response.status === 401) handleUnauthorized();
 
   if (!response.ok) return errorMessage(response);
 

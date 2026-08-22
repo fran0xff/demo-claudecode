@@ -87,3 +87,13 @@ model Settings {
   defaultSeries  String  @default("A")
   updatedAt     DateTime @updatedAt
 }
+
+/// Usuario que puede iniciar sesión. Hoy la app es de un solo operador, pero
+/// el modelo no fuerza esa suposición.
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
