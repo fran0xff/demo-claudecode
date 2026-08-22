@@ -1,4 +1,4 @@
-import { authFetch, handleUnauthorized } from "@/lib/api/auth-fetch";
+import { handleUnauthorized } from "@/lib/api/unauthorized";
 import type { FormState } from "@/lib/form-state";
 
 /**
@@ -17,7 +17,7 @@ export async function saveSettingsAction(
 ): Promise<FormState> {
   let response: Response;
   try {
-    response = await authFetch("/api/settings", { method: "POST", body: formData });
+    response = await fetch("/api/settings", { method: "POST", body: formData });
   } catch {
     return ERROR_GENERICO;
   }

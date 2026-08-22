@@ -1,20 +1,19 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { clearToken } from "@/lib/auth/token-storage";
 
 /**
  * `router.push` en vez de `redirect()` de `next/navigation`: este botón se
  * dispara desde un `onClick` normal, no desde un `<form action>`, así que no
  * corre dentro de la transición que hace que `redirect()` funcione (ver
- * `lib/api/auth-fetch.ts`).
+ * `lib/api/unauthorized.ts`).
  */
 export function LogoutButton() {
   const router = useRouter();
 
   async function handleLogout() {
-    clearToken();
-    // Borra la cookie httpOnly: no se puede hacer desde `document.cookie`.
+    // Borra la cookie httpOnly de sesión: no se puede hacer desde
+    // `document.cookie` (por eso `handleLogout` no la borra directamente).
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
     router.refresh();

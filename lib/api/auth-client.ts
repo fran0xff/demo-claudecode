@@ -1,10 +1,9 @@
 import { redirect } from "next/navigation";
-import { setToken } from "@/lib/auth/token-storage";
 import type { FormState } from "@/lib/form-state";
 
 /**
- * Login: la única petición que no pasa por `authFetch` (todavía no hay
- * token que adjuntar).
+ * Login: la única mutación que no necesita comprobar un 401 antes — es
+ * precisamente la petición que crea la sesión.
  */
 
 const ERROR_GENERICO: FormState = {
@@ -28,7 +27,7 @@ export async function loginAction(_prevState: FormState, formData: FormData): Pr
     }
   }
 
-  const { token } = (await response.json()) as { token: string; expiresAt: string };
-  setToken(token);
+  // La cookie httpOnly de sesión ya la puso `POST /api/auth/login`: no hay
+  // nada más que guardar en el cliente.
   redirect("/invoices");
 }

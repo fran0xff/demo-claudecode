@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { authFetch, handleUnauthorized } from "@/lib/api/auth-fetch";
+import { handleUnauthorized } from "@/lib/api/unauthorized";
 import type { FormState } from "@/lib/form-state";
 
 /**
@@ -35,7 +35,7 @@ export async function createUserAction(
 ): Promise<FormState> {
   let response: Response;
   try {
-    response = await authFetch("/api/users", { method: "POST", body: formData });
+    response = await fetch("/api/users", { method: "POST", body: formData });
   } catch {
     return ERROR_GENERICO;
   }
@@ -60,7 +60,7 @@ export async function changePasswordAction(
 
   let response: Response;
   try {
-    response = await authFetch(`/api/users/${id}/password`, { method: "POST", body: formData });
+    response = await fetch(`/api/users/${id}/password`, { method: "POST", body: formData });
   } catch {
     return ERROR_GENERICO;
   }
@@ -84,7 +84,7 @@ export async function deleteUserAction(
 
   let response: Response;
   try {
-    response = await authFetch(`/api/users/${id}`, { method: "DELETE" });
+    response = await fetch(`/api/users/${id}`, { method: "DELETE" });
   } catch {
     return ERROR_GENERICO.message!;
   }

@@ -1,11 +1,15 @@
 import { redirect } from "next/navigation";
-import { authFetch, handleUnauthorized } from "@/lib/api/auth-fetch";
+import { handleUnauthorized } from "@/lib/api/unauthorized";
 import type { FormState } from "@/lib/form-state";
 
 /**
  * Funciones que los Client Components llaman por `fetch` contra
  * `app/api/invoices/**`, en sustitución de las Server Actions que exponía
  * `app/invoices/actions.ts`.
+ *
+ * `fetch` a secas, sin envoltorio: la sesión viaja en la cookie httpOnly
+ * (`lib/security/auth-cookie.ts`), que el navegador adjunta solo por ser
+ * same-origin, sin que este código tenga que hacer nada.
  *
  * No lleva `"use client"` en la cabecera: no es un componente ni un hook, solo
  * funciones. Se ejecutan en el navegador porque solo las importan Client
@@ -44,7 +48,7 @@ export async function createInvoiceAction(
 ): Promise<FormState> {
   let response: Response;
   try {
-    response = await authFetch("/api/invoices", { method: "POST", body: formData });
+    response = await fetch("/api/invoices", { method: "POST", body: formData });
   } catch {
     return ERROR_GENERICO;
   }
@@ -63,7 +67,7 @@ export async function updateInvoiceAction(
 ): Promise<FormState> {
   let response: Response;
   try {
-    response = await authFetch(`/api/invoices/${id}`, { method: "POST", body: formData });
+    response = await fetch(`/api/invoices/${id}`, { method: "POST", body: formData });
   } catch {
     return ERROR_GENERICO;
   }
@@ -88,7 +92,7 @@ export async function issueInvoiceAction(formData: FormData): Promise<string | n
 
   let response: Response;
   try {
-    response = await authFetch(`/api/invoices/${id}/issue`, { method: "POST" });
+    response = await fetch(`/api/invoices/${id}/issue`, { method: "POST" });
   } catch {
     return ERROR_GENERICO.message!;
   }
@@ -103,7 +107,7 @@ export async function setInvoiceStatusAction(formData: FormData): Promise<string
 
   let response: Response;
   try {
-    response = await authFetch(`/api/invoices/${id}/status`, { method: "POST", body: formData });
+    response = await fetch(`/api/invoices/${id}/status`, { method: "POST", body: formData });
   } catch {
     return ERROR_GENERICO.message!;
   }
@@ -123,7 +127,7 @@ export async function deleteInvoiceAction(
 
   let response: Response;
   try {
-    response = await authFetch(`/api/invoices/${id}`, { method: "DELETE" });
+    response = await fetch(`/api/invoices/${id}`, { method: "DELETE" });
   } catch {
     return ERROR_GENERICO.message!;
   }

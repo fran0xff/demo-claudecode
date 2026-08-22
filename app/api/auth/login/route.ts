@@ -22,10 +22,11 @@ export async function POST(request: NextRequest) {
 
   try {
     const { token, expiresAt } = await authService.login(formData);
-    // Cookie httpOnly además del token en el body: ver `lib/security/auth-cookie.ts`
-    // para qué autoriza y qué no.
+    // El JWT solo viaja en la cookie httpOnly (ver `lib/security/auth-cookie.ts`):
+    // no hace falta devolverlo también en el body, y no hacerlo evita que un
+    // XSS que intercepte esta respuesta concreta pueda leerlo.
     await setAuthCookie(token);
-    return Response.json({ token, expiresAt });
+    return Response.json({ expiresAt });
   } catch (error) {
     if (error instanceof ValidationError) {
       return Response.json({ errors: error.errors }, { status: 400 });
