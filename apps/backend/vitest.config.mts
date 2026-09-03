@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
@@ -13,10 +14,13 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/**/*.test.ts"],
-    // `invoice-service.test.ts` e `invoice-routes.test.ts` montan cada uno su
-    // propia SQLite temporal aplicando todas las migraciones en `beforeAll`.
-    // En paralelo compiten por CPU y el montaje puede superar el timeout por
-    // defecto; en serie es estable sin tocar los tests.
+    // `tests/global-setup.ts` aplica las migraciones una sola vez, contra
+    // `TEST_DATABASE_URL` (un esquema de Postgres aparte, en el mismo
+    // Supabase que usa la app).
+    globalSetup: ["tests/global-setup.ts"],
+    // Los 4 ficheros que tocan la base de datos comparten ese mismo esquema
+    // (antes cada uno montaba su propia SQLite temporal, total aislamiento).
+    // En serie evita que dos ficheros trunquen el esquema a la vez.
     fileParallelism: false,
   },
 });

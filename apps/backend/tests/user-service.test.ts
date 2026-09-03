@@ -1,18 +1,12 @@
-import { mkdirSync, readdirSync, readFileSync, rmSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import bcrypt from "bcryptjs";
-import Database from "better-sqlite3";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { NotFoundError, ValidationError } from "@/lib/services/errors";
+import { resetDatabase } from "./reset-db";
 
 /**
- * Tests de la capa de servicio contra una base de datos SQLite temporal,
+ * Tests de la capa de servicio contra el esquema de test de Postgres,
  * mismo patrón que `invoice-service.test.ts`.
  */
-
-const root = fileURLToPath(new URL("..", import.meta.url));
-const dbPath = path.join(root, "tests", ".tmp", "user-service.db");
 
 type Service = typeof import("@/lib/services/user-service");
 type Db = typeof import("@/lib/db");
@@ -36,22 +30,9 @@ function userForm(overrides: Record<string, string> = {}): FormData {
 }
 
 beforeAll(async () => {
-  mkdirSync(path.dirname(dbPath), { recursive: true });
-  rmSync(dbPath, { force: true });
-
-  const migrationsDir = path.join(root, "prisma", "migrations");
-  const migrations = readdirSync(migrationsDir)
-    .filter((entry) => /^\d+_/.test(entry))
-    .sort();
-  if (migrations.length === 0) throw new Error("No se encontró ninguna migración");
-
-  const database = new Database(dbPath);
-  for (const migration of migrations) {
-    database.exec(readFileSync(path.join(migrationsDir, migration, "migration.sql"), "utf8"));
-  }
-  database.close();
-
-  process.env.DATABASE_URL = `file:${dbPath}`;
+  // lib/db.ts lee DATABASE_URL al importarse, así que se fija antes. El
+  // esquema (`facturas_test`) ya lo dejó listo `tests/global-setup.ts`.
+  process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
   // `lib/security/jwt.ts` calcula el secreto una sola vez al cargar el
   // módulo, y `user-service.ts` lo arrastra a través de `auth-service.ts`
   // (`hashPassword`); mismo secreto de pruebas que `security-jwt.test.ts`.
@@ -59,6 +40,8 @@ beforeAll(async () => {
 
   service = await import("@/lib/services/user-service");
   ({ prisma } = await import("@/lib/db"));
+
+  await resetDatabase(prisma);
 });
 
 beforeEach(async () => {

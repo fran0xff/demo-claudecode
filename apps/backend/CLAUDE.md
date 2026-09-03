@@ -1,9 +1,10 @@
 @AGENTS.md
 
 Backend de la app de facturación: Next.js 16 (solo `app/api/**`, sin
-páginas) · Prisma 7 sobre SQLite · Zod 4 · decimal.js. Ver `../../CLAUDE.md`
-(raíz) para el mapa del monorepo y el contrato de autenticación entre esta
-app y `apps/frontend`; este fichero es solo lo que pasa aquí dentro.
+páginas) · Prisma 7 sobre Postgres (Supabase) · Zod 4 · decimal.js. Ver
+`../../CLAUDE.md` (raíz) para el mapa del monorepo y el contrato de
+autenticación entre esta app y `apps/frontend`; este fichero es solo lo que
+pasa aquí dentro.
 
 **El código y los comentarios están en español.**
 
@@ -26,10 +27,12 @@ npx prisma generate                         # tras clonar: el cliente está giti
 npx prisma studio                           # inspeccionar la base de datos
 ```
 
-La base de datos es `./dev.db` **en la raíz de este workspace**
-(`apps/backend/dev.db`), no dentro de `prisma/`. `prisma.config.ts` (no
-`package.json`) es donde se configura Prisma 7, y trae un fallback para que
-el proyecto funcione recién clonado sin `.env`.
+La base de datos es Postgres en Supabase — `DATABASE_URL` en `.env`
+(gitignored, ver `.env.example`) apunta al **pooler** de Supabase (Session
+mode, puerto 5432), no a la conexión directa: el hostname de conexión
+directa de Supabase es IPv6-only, y sin salida IPv6 el cliente se queda
+colgado hasta el timeout en vez de fallar rápido. `prisma.config.ts` (no
+`package.json`) es donde se configura Prisma 7.
 
 ## Facturas: rutas REST → servicio → repositorio
 
@@ -113,13 +116,16 @@ borrador dejaría un hueco en la serie, que es justo lo que la numeración no
 puede tener.
 
 La numeración es por serie y año, se asigna dentro de una transacción, está
-respaldada por `@@unique([series, year, number])` (en SQLite los `NULL` no
-colisionan entre sí, así que puede haber muchos borradores) y reintenta ante
-colisión.
+respaldada por `@@unique([series, year, number])` (los `NULL` no colisionan
+entre sí en un índice único — comportamiento estándar de SQL, no una
+peculiaridad de un motor concreto — así que puede haber muchos borradores) y
+reintenta ante colisión.
 
-Los estados viven en `@facturas/shared/invoice-status`, no en un enum: SQLite
-no los admite en Prisma, así que la columna es un `String` y las acciones
-validan contra esa lista. **"Vencida" no es un estado guardado**, se deduce de
+Los estados viven en `@facturas/shared/invoice-status`, no en un enum nativo
+de Postgres: la columna es un `String` y las acciones validan contra esa
+lista, decisión que se mantuvo al migrar de SQLite (que no admitía enums en
+Prisma) para no acoplar la migración de base de datos a un cambio de
+negocio aparte. **"Vencida" no es un estado guardado**, se deduce de
 `dueDate` al leer (tanto aquí como en el frontend) para que no se quede
 desfasado.
 
@@ -231,26 +237,43 @@ servidor) — mismo paquete, comportamiento distinto según quién lo cargue.
 
 ## Trampas del entorno
 
-- **Prisma 7 exige driver adapter** para SQLite. El export se llama
-  `PrismaBetterSqlite3` (q minúscula), no `PrismaBetterSQLite3`.
+- **Prisma 7 exige driver adapter** para Postgres. El export se llama
+  `PrismaPg`, de `@prisma/adapter-pg`; se construye con
+  `{ connectionString: process.env.DATABASE_URL }` (ver `lib/db.ts`).
 - El cliente generado va a `lib/generated/prisma` y **está gitignored**: tras
   clonar hay que ejecutar `npx prisma generate` (dentro de `apps/backend`).
-- `better-sqlite3` es un módulo nativo y está en `serverExternalPackages`
-  (`next.config.ts`). Sin eso el bundler falla al resolverlo.
+- `pg` hace requires dinámicos que el bundler no resuelve en build, así que
+  está (junto a `@prisma/adapter-pg`) en `serverExternalPackages`
+  (`next.config.ts`) para que se cargue en tiempo de ejecución.
+- **El hostname de conexión directa de Supabase es IPv6-only.** Si
+  `DATABASE_URL` usa `db.<project-ref>.supabase.co` en vez del pooler
+  (`aws-<n>-<region>.pooler.supabase.com`), cualquier red sin salida IPv6 se
+  queda colgada hasta el timeout en vez de fallar con un error claro. Usa
+  siempre el pooler (Session mode, puerto 5432) en `.env`.
 - **`AUTH_JWT_SECRET` es obligatoria** (mínimo 32 bytes: `openssl rand -base64
   32`) y tiene que coincidir con la de `apps/frontend`. Sin ella la app falla
   al arrancar, a propósito.
 - **`FRONTEND_ORIGIN`** tiene que ser el origen exacto (protocolo + host +
   puerto) desde el que corre `apps/frontend`, para el CORS de `proxy.ts`.
+- **`TEST_DATABASE_URL`** es obligatoria para `npm test`: mismo Postgres que
+  `DATABASE_URL`, pero con `?schema=facturas_test` — un esquema aparte para
+  no mezclar datos de test con los de desarrollo (ver "Tests" más abajo).
 
 ## Tests
 
-`vitest.config.mts` alias `server-only` a un stub vacío (el paquete real lanza
-fuera del entorno de servidor de Next) y fuerza `fileParallelism: false`:
-`invoice-service.test.ts` e `invoice-routes.test.ts` montan cada uno su propia
-SQLite temporal aplicando todas las migraciones en `beforeAll`, y en paralelo
-compiten por CPU hasta superar el timeout por defecto — en serie es estable.
-No lo quites para "acelerar" la suite sin comprobar que sigue siendo estable.
+`vitest.config.mts` alias `server-only` a un stub vacío (el paquete real
+lanza fuera del entorno de servidor de Next), carga `.env` (`import
+"dotenv/config"`, necesario para `TEST_DATABASE_URL`) y fuerza
+`fileParallelism: false`: los 4 ficheros que tocan la base de datos
+comparten el mismo esquema Postgres (`facturas_test`), y dos corriendo a la
+vez se pisarían al truncar. `tests/global-setup.ts` aplica las migraciones
+contra ese esquema **una sola vez**, antes de toda la suite (`globalSetup`
+de Vitest corre en un proceso aparte); cada fichero solo vacía las tablas en
+su `beforeAll` con `tests/reset-db.ts` (`TRUNCATE ... RESTART IDENTITY
+CASCADE`), no las vuelve a crear. Antes de la migración a Postgres cada
+fichero montaba su propia SQLite temporal con `better-sqlite3` — ya no
+aplica: un Postgres remoto no se puede recrear como un fichero desechable
+por fichero de test.
 
 `tests/invoice-service.test.ts` prueba `lib/services/invoice-service.ts`
 directamente (sin HTTP): alta como borrador, validación de campos, bloqueo si
@@ -264,9 +287,7 @@ Si tocas `invoice-service.ts`, estos son los que importan.
 invocando directamente las funciones `GET`/`POST`/`DELETE` exportadas (se
 construye la petición a mano, no hace falta un servidor corriendo), y
 comprueba status codes y el payload exacto de cada aviso (tono, mensaje,
-número de serie) vía el mismo mock de `next/headers`. Ambos aplican
-**todas** las migraciones en orden, no solo la inicial: si añades una, no
-hay que tocar los tests.
+número de serie) vía el mismo mock de `next/headers`.
 
 `tests/user-service.test.ts` y `tests/user-routes.test.ts` siguen el mismo
 patrón aplicado a `lib/services/user-service.ts` y `app/api/users/**`. Ambos

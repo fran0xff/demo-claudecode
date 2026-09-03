@@ -1,25 +1,19 @@
-import { mkdirSync, readdirSync, readFileSync, rmSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import Database from "better-sqlite3";
 import { NextRequest } from "next/server";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { FLASH_COOKIE, parseFlash } from "@facturas/shared/flash";
+import { resetDatabase } from "./reset-db";
 
 /**
- * Tests de integración de las rutas REST contra una base de datos SQLite
- * temporal: llaman directamente a los `GET`/`POST`/`DELETE` exportados por
- * cada `route.ts`, construyendo el `Request` a mano (como antes se invocaba
- * la Server Action directamente).
+ * Tests de integración de las rutas REST contra el esquema de test de
+ * Postgres (`facturas_test`): llaman directamente a los `GET`/`POST`/`DELETE`
+ * exportados por cada `route.ts`, construyendo el `Request` a mano (como
+ * antes se invocaba la Server Action directamente).
  *
  * Solo se mockea `next/headers`: las rutas no llaman a `redirect` ni a
  * `revalidatePath` (eso era cosa de las Server Actions), así que a
  * diferencia del test antiguo no hace falta mockear `next/cache` ni
  * `next/navigation`.
  */
-
-const root = fileURLToPath(new URL("..", import.meta.url));
-const dbPath = path.join(root, "tests", ".tmp", "routes.db");
 
 /**
  * Las rutas dejan el aviso de la operación en una cookie. Aquí basta con un
@@ -140,31 +134,17 @@ async function createAndIssue(overrides: Record<string, string> = {}): Promise<s
 }
 
 beforeAll(async () => {
-  mkdirSync(path.dirname(dbPath), { recursive: true });
-  rmSync(dbPath, { force: true });
-
-  // Levantamos el esquema aplicando las mismas migraciones que usa la app, en
-  // orden: el nombre lleva la marca de tiempo delante, así que basta ordenar.
-  const migrationsDir = path.join(root, "prisma", "migrations");
-  const migrations = readdirSync(migrationsDir)
-    .filter((entry) => /^\d+_/.test(entry))
-    .sort();
-  if (migrations.length === 0) throw new Error("No se encontró ninguna migración");
-
-  const database = new Database(dbPath);
-  for (const migration of migrations) {
-    database.exec(readFileSync(path.join(migrationsDir, migration, "migration.sql"), "utf8"));
-  }
-  database.close();
-
-  // lib/db.ts lee DATABASE_URL al importarse, así que se fija antes.
-  process.env.DATABASE_URL = `file:${dbPath}`;
+  // lib/db.ts lee DATABASE_URL al importarse, así que se fija antes. El
+  // esquema (`facturas_test`) ya lo dejó listo `tests/global-setup.ts`.
+  process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
 
   invoicesRoute = await import("@/app/api/invoices/route");
   invoiceRoute = await import("@/app/api/invoices/[id]/route");
   issueRoute = await import("@/app/api/invoices/[id]/issue/route");
   statusRoute = await import("@/app/api/invoices/[id]/status/route");
   ({ prisma } = await import("@/lib/db"));
+
+  await resetDatabase(prisma);
 });
 
 beforeEach(async () => {
@@ -189,7 +169,10 @@ describe("GET /api/invoices", () => {
   });
 
   it("pagina con offset/limit reales", async () => {
-    for (let i = 0; i < 15; i++) await createDraft();
+    // En paralelo: son 15 inserciones independientes (todas quedan como
+    // borrador, sin correlativo que numerar), y en serie contra Postgres
+    // remoto se acerca al timeout por defecto.
+    await Promise.all(Array.from({ length: 15 }, () => createDraft()));
 
     const page1 = await invoicesRoute.GET(new NextRequest("http://localhost/api/invoices?page=1"));
     const body1 = (await page1.json()) as { items: unknown[]; page: number; totalPages: number };

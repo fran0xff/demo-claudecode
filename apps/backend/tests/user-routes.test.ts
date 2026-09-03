@@ -1,19 +1,13 @@
-import { mkdirSync, readdirSync, readFileSync, rmSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import Database from "better-sqlite3";
 import { NextRequest } from "next/server";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { FLASH_COOKIE, parseFlash } from "@facturas/shared/flash";
+import { resetDatabase } from "./reset-db";
 
 /**
  * Tests de integración de las rutas REST de `app/api/users/**`, mismo patrón
  * que `invoice-routes.test.ts`: se invocan directamente los `GET`/`POST`/
  * `DELETE` exportados por cada `route.ts`.
  */
-
-const root = fileURLToPath(new URL("..", import.meta.url));
-const dbPath = path.join(root, "tests", ".tmp", "user-routes.db");
 
 const { cookieJar } = vi.hoisted(() => ({ cookieJar: new Map<string, string>() }));
 
@@ -74,22 +68,9 @@ async function createUser(overrides: Record<string, string> = {}): Promise<strin
 }
 
 beforeAll(async () => {
-  mkdirSync(path.dirname(dbPath), { recursive: true });
-  rmSync(dbPath, { force: true });
-
-  const migrationsDir = path.join(root, "prisma", "migrations");
-  const migrations = readdirSync(migrationsDir)
-    .filter((entry) => /^\d+_/.test(entry))
-    .sort();
-  if (migrations.length === 0) throw new Error("No se encontró ninguna migración");
-
-  const database = new Database(dbPath);
-  for (const migration of migrations) {
-    database.exec(readFileSync(path.join(migrationsDir, migration, "migration.sql"), "utf8"));
-  }
-  database.close();
-
-  process.env.DATABASE_URL = `file:${dbPath}`;
+  // lib/db.ts lee DATABASE_URL al importarse, así que se fija antes. El
+  // esquema (`facturas_test`) ya lo dejó listo `tests/global-setup.ts`.
+  process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
   // Ver el comentario equivalente en `user-service.test.ts`.
   process.env.AUTH_JWT_SECRET ??= "clave-de-pruebas-con-al-menos-32-bytes-de-largo";
 
@@ -97,6 +78,8 @@ beforeAll(async () => {
   userRoute = await import("@/app/api/users/[id]/route");
   passwordRoute = await import("@/app/api/users/[id]/password/route");
   ({ prisma } = await import("@/lib/db"));
+
+  await resetDatabase(prisma);
 });
 
 beforeEach(async () => {

@@ -7,7 +7,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 /// Una factura emitida. Los datos del emisor y del receptor se guardan
@@ -21,8 +21,10 @@ model Invoice {
   /// borrador se acaba borrando.
   number Int?
   year   Int
-  /// BORRADOR | EMITIDA | ENVIADA | PAGADA. SQLite no admite enums en Prisma,
-  /// así que los valores válidos viven en `lib/invoice-status.ts`.
+  /// BORRADOR | EMITIDA | ENVIADA | PAGADA. Se queda como `String` (no como
+  /// enum nativo de Postgres) para no acoplar el esquema a un cambio de
+  /// negocio aparte: los valores válidos siguen viviendo en
+  /// `lib/invoice-status.ts`, que es donde ya se validan.
   status String @default("BORRADOR")
 
   issueDate DateTime  @default(now())
@@ -41,14 +43,14 @@ model Invoice {
   clientEmail   String?
 
   /// Retención de IRPF en %, 0 = sin retención.
-  irpfRate Decimal @default(0)
+  irpfRate Decimal @default(0) @db.Decimal(5, 2)
   notes    String?
 
   // Totales calculados en servidor y persistidos, no derivados en lectura.
-  subtotal Decimal
-  taxTotal Decimal
-  irpfTotal Decimal
-  total    Decimal
+  subtotal Decimal @db.Decimal(12, 2)
+  taxTotal Decimal @db.Decimal(12, 2)
+  irpfTotal Decimal @db.Decimal(12, 2)
+  total    Decimal @db.Decimal(12, 2)
 
   lines     InvoiceLine[]
   createdAt DateTime      @default(now())
@@ -66,13 +68,13 @@ model InvoiceLine {
   /// Orden de la línea dentro de la factura.
   position    Int
   description String
-  quantity    Decimal
-  unitPrice   Decimal
+  quantity    Decimal @db.Decimal(10, 2)
+  unitPrice   Decimal @db.Decimal(12, 2)
   /// Tipo de IVA en %: 21, 10, 4 o 0.
-  vatRate     Decimal
-  discountPct Decimal @default(0)
+  vatRate     Decimal @db.Decimal(5, 2)
+  discountPct Decimal @default(0) @db.Decimal(5, 2)
   /// Base imponible de la línea, ya con el descuento aplicado.
-  lineTotal   Decimal
+  lineTotal   Decimal @db.Decimal(12, 2)
 
   @@index([invoiceId])
 }
@@ -83,7 +85,7 @@ model Settings {
   issuerName    String
   issuerTaxId   String
   issuerAddress String
-  defaultVatRate Decimal @default(21)
+  defaultVatRate Decimal @default(21) @db.Decimal(5, 2)
   defaultSeries  String  @default("A")
   updatedAt     DateTime @updatedAt
 }

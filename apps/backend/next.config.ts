@@ -1,9 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // `better-sqlite3` es un módulo nativo: el bundler no puede empaquetarlo y
-  // tiene que cargarlo en tiempo de ejecución.
-  serverExternalPackages: ["better-sqlite3", "@prisma/adapter-better-sqlite3"],
+  // `pg` hace requires dinámicos (p. ej. de `pg-native`, que ni siquiera está
+  // instalado) que el bundler no sabe resolver en build: hay que cargarlo en
+  // tiempo de ejecución en vez de empaquetarlo.
+  serverExternalPackages: ["pg", "@prisma/adapter-pg"],
   // `@facturas/shared` vive en el workspace como TypeScript sin compilar:
   // Next lo transpila él mismo en vez de exigir un paso de build aparte.
   transpilePackages: ["@facturas/shared"],

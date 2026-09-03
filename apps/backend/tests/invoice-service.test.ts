@@ -1,13 +1,10 @@
-import { mkdirSync, readdirSync, readFileSync, rmSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import Database from "better-sqlite3";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
   NotFoundError,
   SettingsNotConfiguredError,
   ValidationError,
 } from "@/lib/services/errors";
+import { resetDatabase } from "./reset-db";
 
 /**
  * Tests de la capa de servicio contra una base de datos SQLite temporal:
@@ -18,9 +15,6 @@ import {
  * antiguo test de Server Actions aquí no hace falta mockear `next/headers`,
  * `next/cache` ni `next/navigation`.
  */
-
-const root = fileURLToPath(new URL("..", import.meta.url));
-const dbPath = path.join(root, "tests", ".tmp", "service.db");
 
 type Service = typeof import("@/lib/services/invoice-service");
 type Db = typeof import("@/lib/db");
@@ -83,28 +77,14 @@ async function createAndIssue(overrides: Record<string, string> = {}): Promise<s
 }
 
 beforeAll(async () => {
-  mkdirSync(path.dirname(dbPath), { recursive: true });
-  rmSync(dbPath, { force: true });
-
-  // Levantamos el esquema aplicando las mismas migraciones que usa la app, en
-  // orden: el nombre lleva la marca de tiempo delante, así que basta ordenar.
-  const migrationsDir = path.join(root, "prisma", "migrations");
-  const migrations = readdirSync(migrationsDir)
-    .filter((entry) => /^\d+_/.test(entry))
-    .sort();
-  if (migrations.length === 0) throw new Error("No se encontró ninguna migración");
-
-  const database = new Database(dbPath);
-  for (const migration of migrations) {
-    database.exec(readFileSync(path.join(migrationsDir, migration, "migration.sql"), "utf8"));
-  }
-  database.close();
-
-  // lib/db.ts lee DATABASE_URL al importarse, así que se fija antes.
-  process.env.DATABASE_URL = `file:${dbPath}`;
+  // lib/db.ts lee DATABASE_URL al importarse, así que se fija antes. El
+  // esquema (`facturas_test`) ya lo dejó listo `tests/global-setup.ts`.
+  process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
 
   service = await import("@/lib/services/invoice-service");
   ({ prisma } = await import("@/lib/db"));
+
+  await resetDatabase(prisma);
 });
 
 beforeEach(async () => {

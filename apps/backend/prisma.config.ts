@@ -9,8 +9,9 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    // El fallback deja el proyecto usable recién clonado, sin `.env` (que está
-    // en .gitignore). Ver `.env.example`.
-    url: process.env["DATABASE_URL"] ?? "file:./dev.db",
+    // Postgres no tiene un "local por defecto" como el `file:./dev.db` de
+    // SQLite: sin `DATABASE_URL` en `.env` (gitignored, ver `.env.example`)
+    // no hay a qué conectarse.
+    url: process.env["DATABASE_URL"] ?? "",
   },
 });

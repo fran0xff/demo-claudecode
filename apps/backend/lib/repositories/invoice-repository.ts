@@ -136,11 +136,11 @@ export async function getInvoice(id: string): Promise<InvoiceDTO | null> {
 
 /**
  * Fila cruda de la consulta paginada: mismos campos que `InvoiceSummary`, sin
- * pasar por Prisma. `total` llega como `string`, no `number`: el driver de
- * `$queryRaw` decide el tipo JS a partir del tipo declarado en el esquema
- * ("DECIMAL"), no del storage class real de SQLite, y para columnas
- * `Decimal` siempre devuelve texto (para no perder precisión) aunque el
- * valor guardado sea un entero exacto como `5478`.
+ * pasar por Prisma. `total` llega como `string`, no `number`: `node-postgres`
+ * (el driver detrás de `@prisma/adapter-pg`) devuelve las columnas `numeric`
+ * como texto por defecto, para no perder precisión con valores que no caben
+ * en un `float64` — aunque el valor guardado sea un entero exacto como
+ * `5478`.
  */
 type InvoiceListRow = {
   id: string;
@@ -197,6 +197,10 @@ function likePattern(search: string): string {
  * UTC compararía la fecha guardada con un instante distinto en cualquier
  * huso horario que no sea UTC, y dejaría fuera facturas del día pedido (o
  * colaría alguna del día anterior/siguiente) según el desfase del servidor.
+ * En Postgres `issueDate` es un `timestamp` real (no texto), así que no hace
+ * falta la normalización con `julianday()` que exigía SQLite: comparar los
+ * `Date` de JS directamente ya compara el mismo instante sin ambigüedad de
+ * formato.
  */
 function localMidnight(dateOnly: string): Date {
   return new Date(`${dateOnly}T00:00:00`);
@@ -241,35 +245,27 @@ function buildFilterSql(filters: InvoiceListFilters) {
 
   if (filters.search) {
     const pattern = likePattern(filters.search);
+    // `ILIKE`, no `LIKE`: en Postgres `LIKE` es sensible a mayúsculas (a
+    // diferencia de SQLite, que lo era en ASCII por defecto). `ILIKE` es el
+    // equivalente case-insensitive nativo de Postgres.
     clauses.push(Prisma.sql`(
-      clientName LIKE ${pattern} ESCAPE '\\'
+      "clientName" ILIKE ${pattern} ESCAPE '\\'
       OR EXISTS (
         SELECT 1 FROM "InvoiceLine" li
-        WHERE li."invoiceId" = "Invoice".id AND li.description LIKE ${pattern} ESCAPE '\\'
+        WHERE li."invoiceId" = "Invoice"."id" AND li."description" ILIKE ${pattern} ESCAPE '\\'
       )
     )`);
   }
-  // `julianday()` en los dos lados: la columna se guardó con sufijo "+00:00"
-  // y el parámetro sale de `toISOString()` con sufijo "Z" — mismo instante,
-  // distinto texto. Comparar las cadenas tal cual falla justo en los empates
-  // exactos (una factura emitida exactamente a la medianoche del límite:
-  // "+00:00" ordena por delante de "Z" aunque representen lo mismo, y se
-  // quedaría fuera). `julianday()` los pasa a los dos por un número antes de
-  // comparar, así que el formato del sufijo deja de importar.
   if (filters.dateFrom) {
-    clauses.push(
-      Prisma.sql`julianday(issueDate) >= julianday(${localMidnight(filters.dateFrom).toISOString()})`,
-    );
+    clauses.push(Prisma.sql`"issueDate" >= ${localMidnight(filters.dateFrom)}`);
   }
   if (filters.dateTo) {
-    clauses.push(
-      Prisma.sql`julianday(issueDate) < julianday(${nextLocalMidnight(filters.dateTo).toISOString()})`,
-    );
+    clauses.push(Prisma.sql`"issueDate" < ${nextLocalMidnight(filters.dateTo)}`);
   }
-  if (filters.minTotal !== undefined) clauses.push(Prisma.sql`total >= ${filters.minTotal}`);
-  if (filters.maxTotal !== undefined) clauses.push(Prisma.sql`total <= ${filters.maxTotal}`);
+  if (filters.minTotal !== undefined) clauses.push(Prisma.sql`"total" >= ${filters.minTotal}`);
+  if (filters.maxTotal !== undefined) clauses.push(Prisma.sql`"total" <= ${filters.maxTotal}`);
   if (filters.statuses && filters.statuses.length > 0) {
-    clauses.push(Prisma.sql`status IN (${Prisma.join(filters.statuses)})`);
+    clauses.push(Prisma.sql`"status" IN (${Prisma.join(filters.statuses)})`);
   }
 
   return clauses.length > 0 ? Prisma.sql`WHERE ${Prisma.join(clauses, " AND ")}` : Prisma.empty;
@@ -299,15 +295,15 @@ export async function listInvoices(
 
   const [rows, total, draftsTotal] = await Promise.all([
     prisma.$queryRaw<InvoiceListRow[]>`
-      SELECT id, series, number, year, status, issueDate, dueDate, clientName, total, currency
+      SELECT "id", "series", "number", "year", "status", "issueDate", "dueDate", "clientName", "total", "currency"
       FROM "Invoice"
       ${buildFilterSql(filters)}
       ORDER BY
-        CASE WHEN number IS NULL THEN 0 ELSE 1 END ASC,
-        CASE WHEN number IS NULL THEN createdAt END DESC,
-        year DESC,
-        series ASC,
-        number DESC
+        CASE WHEN "number" IS NULL THEN 0 ELSE 1 END ASC,
+        CASE WHEN "number" IS NULL THEN "createdAt" END DESC,
+        "year" DESC,
+        "series" ASC,
+        "number" DESC
       LIMIT ${pageSize} OFFSET ${offset}
     `,
     prisma.invoice.count({ where }),

@@ -15,7 +15,7 @@ propio `package.json`, pensadas para desplegarse por separado (npm
 workspaces, sin Turborepo ni pnpm):
 
 ```
-apps/backend/    # Next.js 16, solo app/api/** — la única que toca Prisma/SQLite
+apps/backend/    # Next.js 16, solo app/api/** — la única que toca Prisma/Postgres
 apps/frontend/   # Next.js 16, solo páginas — nunca toca la base de datos
 packages/shared/ # @facturas/shared: TS sin compilar, lo consumen las dos apps
 ```
