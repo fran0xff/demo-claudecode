@@ -134,7 +134,14 @@ export async function getInvoice(id: string): Promise<InvoiceDTO | null> {
   return invoice ? toDTO(invoice) : null;
 }
 
-/** Fila cruda de la consulta paginada: mismos campos que `InvoiceSummary`, sin pasar por Prisma. */
+/**
+ * Fila cruda de la consulta paginada: mismos campos que `InvoiceSummary`, sin
+ * pasar por Prisma. `total` llega como `string`, no `number`: el driver de
+ * `$queryRaw` decide el tipo JS a partir del tipo declarado en el esquema
+ * ("DECIMAL"), no del storage class real de SQLite, y para columnas
+ * `Decimal` siempre devuelve texto (para no perder precisión) aunque el
+ * valor guardado sea un entero exacto como `5478`.
+ */
 type InvoiceListRow = {
   id: string;
   series: string;
@@ -144,7 +151,7 @@ type InvoiceListRow = {
   issueDate: string;
   dueDate: string | null;
   clientName: string;
-  total: number;
+  total: string;
   currency: string;
 };
 
@@ -158,10 +165,20 @@ function toSummaryFromRow(row: InvoiceListRow): InvoiceSummary {
     issueDate: row.issueDate,
     dueDate: row.dueDate,
     clientName: row.clientName,
-    total: row.total,
+    total: Number(row.total),
     currency: row.currency,
   };
 }
+
+/** Filtros del listado, ya normalizados por el servicio (fechas `YYYY-MM-DD`, importes válidos, estados reales). */
+export type InvoiceListFilters = {
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  minTotal?: number;
+  maxTotal?: number;
+  statuses?: InvoiceStatus[];
+};
 
 /**
  * Escapa `%`, `_` y `\` antes de meter el texto en un `LIKE`: son comodines
@@ -174,62 +191,117 @@ function likePattern(search: string): string {
 }
 
 /**
+ * `dateFromInput` en `lib/validation.ts` guarda `issueDate` a medianoche
+ * LOCAL, no UTC ("para que no se desplace un día"). Los límites del filtro
+ * tienen que construirse con ese mismo criterio: comparar contra medianoche
+ * UTC compararía la fecha guardada con un instante distinto en cualquier
+ * huso horario que no sea UTC, y dejaría fuera facturas del día pedido (o
+ * colaría alguna del día anterior/siguiente) según el desfase del servidor.
+ */
+function localMidnight(dateOnly: string): Date {
+  return new Date(`${dateOnly}T00:00:00`);
+}
+
+/** "Hasta el día X inclusive" no es `<= X`: se compara con `<` contra la medianoche siguiente. */
+function nextLocalMidnight(dateOnly: string): Date {
+  const date = localMidnight(dateOnly);
+  date.setDate(date.getDate() + 1);
+  return date;
+}
+
+/**
  * Mismo filtro en dos formas: `where` tipado (para los `count` por
  * `prisma.invoice`, que sí soportan filtrar por una relación) y el
  * fragmento SQL equivalente (para el `SELECT` en crudo de abajo, que no
  * puede reutilizar un `where` de Prisma). Si se toca uno, hay que tocar el
  * otro o el recuento y la página dejarían de coincidir.
  */
-function searchWhere(search: string | undefined): Prisma.InvoiceWhereInput {
-  if (!search) return {};
-  return {
-    OR: [
-      { clientName: { contains: search } },
-      { lines: { some: { description: { contains: search } } } },
-    ],
-  };
+function buildWhere(filters: InvoiceListFilters): Prisma.InvoiceWhereInput {
+  const and: Prisma.InvoiceWhereInput[] = [];
+
+  if (filters.search) {
+    and.push({
+      OR: [
+        { clientName: { contains: filters.search } },
+        { lines: { some: { description: { contains: filters.search } } } },
+      ],
+    });
+  }
+  if (filters.dateFrom) and.push({ issueDate: { gte: localMidnight(filters.dateFrom) } });
+  if (filters.dateTo) and.push({ issueDate: { lt: nextLocalMidnight(filters.dateTo) } });
+  if (filters.minTotal !== undefined) and.push({ total: { gte: filters.minTotal } });
+  if (filters.maxTotal !== undefined) and.push({ total: { lte: filters.maxTotal } });
+  if (filters.statuses && filters.statuses.length > 0) and.push({ status: { in: filters.statuses } });
+
+  return and.length > 0 ? { AND: and } : {};
 }
 
-function searchFilterSql(search: string | undefined) {
-  if (!search) return Prisma.empty;
-  const pattern = likePattern(search);
-  return Prisma.sql`
-    WHERE (
+function buildFilterSql(filters: InvoiceListFilters) {
+  const clauses: Prisma.Sql[] = [];
+
+  if (filters.search) {
+    const pattern = likePattern(filters.search);
+    clauses.push(Prisma.sql`(
       clientName LIKE ${pattern} ESCAPE '\\'
       OR EXISTS (
         SELECT 1 FROM "InvoiceLine" li
         WHERE li."invoiceId" = "Invoice".id AND li.description LIKE ${pattern} ESCAPE '\\'
       )
-    )
-  `;
+    )`);
+  }
+  // `julianday()` en los dos lados: la columna se guardó con sufijo "+00:00"
+  // y el parámetro sale de `toISOString()` con sufijo "Z" — mismo instante,
+  // distinto texto. Comparar las cadenas tal cual falla justo en los empates
+  // exactos (una factura emitida exactamente a la medianoche del límite:
+  // "+00:00" ordena por delante de "Z" aunque representen lo mismo, y se
+  // quedaría fuera). `julianday()` los pasa a los dos por un número antes de
+  // comparar, así que el formato del sufijo deja de importar.
+  if (filters.dateFrom) {
+    clauses.push(
+      Prisma.sql`julianday(issueDate) >= julianday(${localMidnight(filters.dateFrom).toISOString()})`,
+    );
+  }
+  if (filters.dateTo) {
+    clauses.push(
+      Prisma.sql`julianday(issueDate) < julianday(${nextLocalMidnight(filters.dateTo).toISOString()})`,
+    );
+  }
+  if (filters.minTotal !== undefined) clauses.push(Prisma.sql`total >= ${filters.minTotal}`);
+  if (filters.maxTotal !== undefined) clauses.push(Prisma.sql`total <= ${filters.maxTotal}`);
+  if (filters.statuses && filters.statuses.length > 0) {
+    clauses.push(Prisma.sql`status IN (${Prisma.join(filters.statuses)})`);
+  }
+
+  return clauses.length > 0 ? Prisma.sql`WHERE ${Prisma.join(clauses, " AND ")}` : Prisma.empty;
 }
 
 /**
  * Página del listado, paginada en la base de datos con `LIMIT`/`OFFSET`, y
- * opcionalmente filtrada por cliente o por el texto de una línea.
+ * opcionalmente filtrada por cliente, texto de una línea, rango de fecha de
+ * emisión, rango de importe o estado.
  *
  * SQL en crudo (no `findMany`) porque el orden no es una sola columna: los
  * borradores (`number` nulo) van siempre primero, por fecha de creación —son
  * los que piden una decisión—, y el resto por año/serie/correlativo. Ese
  * orden compuesto no se puede expresar con `orderBy` de Prisma, y sin
  * expresarlo en la propia consulta, el `LIMIT`/`OFFSET` cortaría las páginas
- * por el orden equivocado. La búsqueda, en cambio, sí se puede expresar con
+ * por el orden equivocado. Los filtros, en cambio, sí se pueden expresar con
  * `where` de Prisma para los `count` — solo el `SELECT` paginado necesita su
- * propio fragmento SQL (`searchFilterSql`).
+ * propio fragmento SQL (`buildFilterSql`).
  */
 export async function listInvoices(
   page: number,
   pageSize: number,
-  search?: string,
+  filters: InvoiceListFilters = {},
 ): Promise<InvoicePage> {
   const offset = (page - 1) * pageSize;
-  const where = searchWhere(search);
+  const where = buildWhere(filters);
 
   const [rows, total, draftsTotal] = await Promise.all([
     prisma.$queryRaw<InvoiceListRow[]>`
       SELECT id, series, number, year, status, issueDate, dueDate, clientName, total, currency
       FROM "Invoice"
-      ${searchFilterSql(search)}
+      ${buildFilterSql(filters)}
       ORDER BY
         CASE WHEN number IS NULL THEN 0 ELSE 1 END ASC,
         CASE WHEN number IS NULL THEN createdAt END DESC,
@@ -248,7 +320,7 @@ export async function listInvoices(
   // desde entonces): se repite una sola vez con la última página de verdad en
   // vez de devolver un hueco vacío.
   if (page > totalPages) {
-    return listInvoices(totalPages, pageSize, search);
+    return listInvoices(totalPages, pageSize, filters);
   }
 
   return {

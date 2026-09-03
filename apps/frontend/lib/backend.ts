@@ -44,9 +44,23 @@ export async function getSettings(): Promise<SettingsDTO> {
   return backendJson<SettingsDTO>("/api/settings");
 }
 
-export async function listInvoices(page: number, search?: string): Promise<InvoicePage> {
+export type InvoiceListFilters = {
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  minTotal?: string;
+  maxTotal?: string;
+  statuses?: string[];
+};
+
+export async function listInvoices(page: number, filters: InvoiceListFilters = {}): Promise<InvoicePage> {
   const query = new URLSearchParams({ page: String(page) });
-  if (search) query.set("q", search);
+  if (filters.search) query.set("q", filters.search);
+  if (filters.dateFrom) query.set("dateFrom", filters.dateFrom);
+  if (filters.dateTo) query.set("dateTo", filters.dateTo);
+  if (filters.minTotal) query.set("minTotal", filters.minTotal);
+  if (filters.maxTotal) query.set("maxTotal", filters.maxTotal);
+  for (const status of filters.statuses ?? []) query.append("status", status);
   return backendJson<InvoicePage>(`/api/invoices?${query}`);
 }
 

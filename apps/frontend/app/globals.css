@@ -367,6 +367,20 @@ body {
   display: flex;
 }
 
+/*
+ * Panel de filtros de facturas, plegable con el mismo mecanismo que el menú
+ * de arriba: `data-filtros` en <html>, puesto antes del primer pintado. Solo
+ * se oculta el cuerpo del panel — la cabecera con el botón de plegar se queda
+ * siempre visible, para poder volver a abrirlo.
+ */
+:root[data-filtros="hidden"] .filters-sidebar-body {
+  display: none;
+}
+
+:root[data-filtros="hidden"] .filters-sidebar {
+  width: auto;
+}
+
 @layer components {
   .field {
     @apply w-full rounded border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm

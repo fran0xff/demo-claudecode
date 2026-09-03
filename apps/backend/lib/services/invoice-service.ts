@@ -7,7 +7,7 @@ import {
   InvoiceNumberConflictError,
 } from "@/lib/services/errors";
 import { computeInvoiceTotals, formatInvoiceNumber } from "@facturas/shared/invoice-math";
-import { isIssuedStatus, type InvoiceStatus } from "@facturas/shared/invoice-status";
+import { isInvoiceStatus, isIssuedStatus, type InvoiceStatus } from "@facturas/shared/invoice-status";
 import {
   assignInvoiceNumber,
   createDraftInvoice,
@@ -21,6 +21,7 @@ import {
   replaceInvoiceLinesAndHeader,
   updateInvoiceStatus,
   type InvoiceDTO,
+  type InvoiceListFilters,
 } from "@/lib/repositories/invoice-repository";
 import type { InvoicePage } from "@facturas/shared/dto";
 import { getSettings } from "@/lib/repositories/settings-repository";
@@ -144,17 +145,52 @@ export async function getInvoice(id: string): Promise<InvoiceDTO | null> {
 /** Tamaño de página fijo del listado: no es una preferencia configurable. */
 export const INVOICE_PAGE_SIZE = 10;
 
+/** Filtros tal y como llegan de la query string: todo string, todo opcional, nada validado aún. */
+export type InvoiceListQuery = {
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  minTotal?: string;
+  maxTotal?: string;
+  statuses?: string[];
+};
+
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
+function parseDateOnly(value: string | undefined): string | undefined {
+  return value && DATE_ONLY.test(value) ? value : undefined;
+}
+
+/** `undefined` si falta, no es un número o es negativo: un importe no puede serlo. */
+function parseAmount(value: string | undefined): number | undefined {
+  if (!value) return undefined;
+  const amount = Number(value);
+  return Number.isFinite(amount) && amount >= 0 ? amount : undefined;
+}
+
 /**
- * Página del listado de facturas para `GET /api/invoices?page=&q=`.
+ * Página del listado de facturas para `GET /api/invoices?page=&q=&dateFrom=
+ * &dateTo=&minTotal=&maxTotal=&status=`.
  *
- * `search` filtra por cliente o por el texto de una línea; se recorta con
- * `trim()` aquí (no en la ruta) porque es la misma normalización tanto si
- * llega de la query string como de una llamada directa al servicio.
+ * Normaliza y valida aquí (no en la ruta ni en el repositorio) porque es la
+ * misma normalización tanto si los filtros llegan de la query string como de
+ * una llamada directa al servicio: una fecha con el formato equivocado o un
+ * importe negativo simplemente se ignoran en vez de romper la petición — un
+ * filtro mal formado no debería tumbar el listado entero.
  */
-export async function listInvoices(page: number, search?: string): Promise<InvoicePage> {
+export async function listInvoices(page: number, query: InvoiceListQuery = {}): Promise<InvoicePage> {
   const safePage = Math.max(1, Math.trunc(page) || 1);
-  const trimmedSearch = search?.trim();
-  return listInvoiceRows(safePage, INVOICE_PAGE_SIZE, trimmedSearch || undefined);
+
+  const filters: InvoiceListFilters = {
+    search: query.search?.trim() || undefined,
+    dateFrom: parseDateOnly(query.dateFrom),
+    dateTo: parseDateOnly(query.dateTo),
+    minTotal: parseAmount(query.minTotal),
+    maxTotal: parseAmount(query.maxTotal),
+    statuses: query.statuses?.filter(isInvoiceStatus),
+  };
+
+  return listInvoiceRows(safePage, INVOICE_PAGE_SIZE, filters);
 }
 
 /** Correlativo que le tocaría a la siguiente factura de esa serie y año — solo

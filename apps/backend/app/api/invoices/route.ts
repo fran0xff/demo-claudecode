@@ -7,8 +7,15 @@ import { SettingsNotConfiguredError, ValidationError } from "@/lib/services/erro
 export async function GET(request: NextRequest) {
   const params = new URL(request.url).searchParams;
   const page = Number(params.get("page")) || 1;
-  const search = params.get("q") ?? undefined;
-  const invoices = await invoiceService.listInvoices(page, search);
+
+  const invoices = await invoiceService.listInvoices(page, {
+    search: params.get("q") ?? undefined,
+    dateFrom: params.get("dateFrom") ?? undefined,
+    dateTo: params.get("dateTo") ?? undefined,
+    minTotal: params.get("minTotal") ?? undefined,
+    maxTotal: params.get("maxTotal") ?? undefined,
+    statuses: params.getAll("status"),
+  });
   return Response.json(invoices);
 }
 

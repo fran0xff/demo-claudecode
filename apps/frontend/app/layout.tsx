@@ -3,6 +3,7 @@ import Link from "next/link";
 import { LogoutButton } from "@/components/logout-button";
 import { NavToggle } from "@/components/nav-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { FILTERS_SIDEBAR_INIT_SCRIPT } from "@/lib/filters-sidebar";
 import { NAV_INIT_SCRIPT } from "@/lib/nav";
 import { getSession } from "@/lib/session";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
@@ -19,14 +20,16 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   // pintar "Salir" y los enlaces a pantallas protegidas.
   const session = await getSession();
 
-  // `suppressHydrationWarning`: los scripts del <head> escriben `data-theme` y
-  // `data-nav` antes de que React hidrate, así que el <html> del servidor y el
-  // del cliente difieren a propósito.
+  // `suppressHydrationWarning`: los scripts del <head> escriben `data-theme`,
+  // `data-nav` y `data-filtros` antes de que React hidrate, así que el <html>
+  // del servidor y el del cliente difieren a propósito.
   return (
     <html lang="es" className="h-full antialiased" suppressHydrationWarning>
       <head>
         <script
-          dangerouslySetInnerHTML={{ __html: `${THEME_INIT_SCRIPT};${NAV_INIT_SCRIPT}` }}
+          dangerouslySetInnerHTML={{
+            __html: `${THEME_INIT_SCRIPT};${NAV_INIT_SCRIPT};${FILTERS_SIDEBAR_INIT_SCRIPT}`,
+          }}
         />
       </head>
       <body className="flex min-h-full flex-col">

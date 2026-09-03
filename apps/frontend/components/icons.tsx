@@ -56,3 +56,19 @@ export function ChevronDownIcon() {
     </svg>
   );
 }
+
+export function ChevronLeftIcon() {
+  return (
+    <svg {...iconProps}>
+      <path d="m15 6-6 6 6 6" />
+    </svg>
+  );
+}
+
+export function ChevronRightIcon() {
+  return (
+    <svg {...iconProps}>
+      <path d="m9 6 6 6-6 6" />
+    </svg>
+  );
+}

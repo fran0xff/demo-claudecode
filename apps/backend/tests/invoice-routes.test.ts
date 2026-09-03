@@ -256,6 +256,65 @@ describe("GET /api/invoices", () => {
     expect(body.total).toBe(0);
     expect(body.totalPages).toBe(1);
   });
+
+  it("filtra por rango de fecha de emisión, el día «hasta» incluido", async () => {
+    // No se compara contra el string de `issueDate` devuelto: se guarda a
+    // medianoche LOCAL y se sirve en UTC, así que su fecha puede desplazarse
+    // un día respecto a la introducida según el huso horario de la máquina
+    // que corre el test — eso es un comportamiento aceptado de la app
+    // (`dateFromInput` en `lib/validation.ts`), no algo que este test deba
+    // verificar. Se identifican las facturas por cliente en su lugar.
+    const dentroDesde = await createDraft({ issueDate: "2026-01-10", clientName: "Dentro desde" });
+    const dentroHasta = await createDraft({ issueDate: "2026-01-15", clientName: "Dentro hasta" });
+    await createDraft({ issueDate: "2026-01-20", clientName: "Fuera de rango" });
+
+    const response = await invoicesRoute.GET(
+      new NextRequest("http://localhost/api/invoices?dateFrom=2026-01-10&dateTo=2026-01-15"),
+    );
+    const body = (await response.json()) as { items: { id: string }[]; total: number };
+    expect(body.total).toBe(2);
+    expect(body.items.map((i) => i.id).sort()).toEqual([dentroDesde, dentroHasta].sort());
+  });
+
+  it("filtra por rango de importe", async () => {
+    // La línea 2 por defecto ya suma ~208 €; con la línea 1 barata el total
+    // se queda muy por debajo de 1000, y con la línea 1 carísima muy por encima.
+    await createDraft({ "lines.0.description": "Barata", "lines.0.quantity": "1", "lines.0.unitPrice": "1" });
+    await createDraft({ "lines.0.description": "Cara", "lines.0.quantity": "1", "lines.0.unitPrice": "5000" });
+
+    const response = await invoicesRoute.GET(
+      new NextRequest("http://localhost/api/invoices?minTotal=1000"),
+    );
+    const body = (await response.json()) as { items: { total: number }[]; total: number };
+    expect(body.total).toBe(1);
+    expect(body.items[0].total).toBeGreaterThan(1000);
+  });
+
+  it("filtra por estado", async () => {
+    await createDraft();
+    await createAndIssue();
+
+    const response = await invoicesRoute.GET(
+      new NextRequest("http://localhost/api/invoices?status=EMITIDA"),
+    );
+    const body = (await response.json()) as { items: { status: string }[]; total: number };
+    expect(body.total).toBe(1);
+    expect(body.items[0].status).toBe("EMITIDA");
+  });
+
+  it("combina varios filtros a la vez (AND, no OR)", async () => {
+    await createAndIssue({ clientName: "Cliente Filtrado S.L." });
+    await createDraft({ clientName: "Cliente Filtrado S.L." }); // mismo cliente, distinto estado
+
+    const response = await invoicesRoute.GET(
+      new NextRequest(
+        `http://localhost/api/invoices?q=${encodeURIComponent("Cliente Filtrado")}&status=EMITIDA`,
+      ),
+    );
+    const body = (await response.json()) as { items: { status: string }[]; total: number };
+    expect(body.total).toBe(1);
+    expect(body.items[0].status).toBe("EMITIDA");
+  });
 });
 
 describe("POST /api/invoices", () => {

@@ -5,8 +5,8 @@ type Props = {
   basePath: string;
   page: number;
   totalPages: number;
-  /** Otros parámetros a conservar al cambiar de página, p. ej. la búsqueda (`q`). */
-  extraParams?: Record<string, string | undefined>;
+  /** Otros parámetros a conservar al cambiar de página: la búsqueda, los rangos, los estados marcados. */
+  extraParams?: Record<string, string | string[] | undefined>;
 };
 
 /**
@@ -19,7 +19,11 @@ export function Pagination({ basePath, page, totalPages, extraParams }: Props) {
   const href = (target: number) => {
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(extraParams ?? {})) {
-      if (value) params.set(key, value);
+      if (Array.isArray(value)) {
+        for (const item of value) params.append(key, item);
+      } else if (value) {
+        params.set(key, value);
+      }
     }
     params.set("page", String(target));
     return `${basePath}?${params}`;
