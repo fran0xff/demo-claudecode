@@ -10,27 +10,44 @@ borrarla y configurar los datos del emisor.
 
 ## Puesta en marcha
 
+Monorepo con dos apps Next.js independientes (`apps/backend`, solo API;
+`apps/frontend`, solo páginas) y un paquete compartido (`packages/shared`).
+Ver `CLAUDE.md` para el mapa completo y el contrato de autenticación entre
+las dos apps.
+
 ```bash
-npm install
-npx prisma generate          # el cliente generado está gitignored
-cp .env.example .env         # opcional: prisma.config.ts trae un fallback
-npx prisma migrate dev       # crea dev.db y aplica el esquema
-npm run seed                 # ajustes del emisor + 2 facturas de ejemplo
-npm run dev                  # http://localhost:3000
+npm install                          # una sola vez, en la raíz
+
+cd apps/backend
+cp .env.example .env                 # AUTH_JWT_SECRET, FRONTEND_ORIGIN...
+npx prisma generate                  # el cliente generado está gitignored
+npx prisma migrate dev               # crea dev.db y aplica el esquema
+npm run seed                         # ajustes del emisor + facturas de ejemplo
+npm run create-user -- tu@correo.com "contraseña larga"   # el primer usuario
+
+cd ../frontend
+cp .env.example .env                 # misma AUTH_JWT_SECRET que el backend
+
+# desde la raíz, cada una en su terminal:
+npm run dev:backend                  # http://localhost:3001
+npm run dev:frontend                 # http://localhost:3000
 ```
 
-La base de datos es `./dev.db` **en la raíz**, no dentro de `prisma/`.
+La base de datos es `apps/backend/dev.db`, no dentro de `prisma/`.
 
 ## Scripts
 
+Desde la raíz, sobre los tres workspaces a la vez:
+
 | Comando | Qué hace |
 | --- | --- |
-| `npm run dev` | Servidor de desarrollo |
-| `npm run build` | Build de producción (hace también el type-check) |
-| `npm run lint` | ESLint |
-| `npm test` | Toda la suite (Vitest) |
-| `npm run seed` | Rellena la base de datos con datos de ejemplo (idempotente) |
-| `npx prisma studio` | Explorador de la base de datos |
+| `npm run dev:backend` / `dev:frontend` | Servidor de desarrollo de cada app |
+| `npm run build` | Build de producción de las dos apps |
+| `npm run lint` | ESLint en todos los workspaces |
+| `npm test` | Vitest en todos los workspaces (backend + shared) |
+
+Dentro de `apps/backend` hay además `npm run seed` y `npm run create-user`
+(ver `apps/backend/CLAUDE.md`).
 
 ## Stack
 

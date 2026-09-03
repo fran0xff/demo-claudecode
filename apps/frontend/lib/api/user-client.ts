@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
+import { API_URL } from "@/lib/api-url";
 import { handleUnauthorized } from "@/lib/api/unauthorized";
 import type { FormState } from "@/lib/form-state";
 
 /**
  * Funciones que los Client Components llaman por `fetch` contra
- * `app/api/users/**`, mismo patrón que `lib/api/invoice-client.ts`.
+ * `apps/backend` (`/api/users/**`), mismo patrón que `lib/api/invoice-client.ts`.
  */
 
 const ERROR_GENERICO: FormState = {
@@ -35,7 +36,11 @@ export async function createUserAction(
 ): Promise<FormState> {
   let response: Response;
   try {
-    response = await fetch("/api/users", { method: "POST", body: formData });
+    response = await fetch(`${API_URL}/api/users`, {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    });
   } catch {
     return ERROR_GENERICO;
   }
@@ -60,7 +65,11 @@ export async function changePasswordAction(
 
   let response: Response;
   try {
-    response = await fetch(`/api/users/${id}/password`, { method: "POST", body: formData });
+    response = await fetch(`${API_URL}/api/users/${id}/password`, {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    });
   } catch {
     return ERROR_GENERICO;
   }
@@ -84,7 +93,10 @@ export async function deleteUserAction(
 
   let response: Response;
   try {
-    response = await fetch(`/api/users/${id}`, { method: "DELETE" });
+    response = await fetch(`${API_URL}/api/users/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
   } catch {
     return ERROR_GENERICO.message!;
   }

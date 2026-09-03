@@ -4,6 +4,7 @@ import { LogoutButton } from "@/components/logout-button";
 import { NavToggle } from "@/components/nav-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NAV_INIT_SCRIPT } from "@/lib/nav";
+import { getSession } from "@/lib/session";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
@@ -12,7 +13,12 @@ export const metadata: Metadata = {
   description: "Emisión de facturas con desglose de IVA e IRPF",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // El layout envuelve también páginas públicas (`/login`), así que no basta
+  // con que exista la cookie: hay que saber si hay sesión de verdad antes de
+  // pintar "Salir" y los enlaces a pantallas protegidas.
+  const session = await getSession();
+
   // `suppressHydrationWarning`: los scripts del <head> escriben `data-theme` y
   // `data-nav` antes de que React hidrate, así que el <html> del servidor y el
   // del cliente difieren a propósito.
@@ -35,16 +41,24 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               Facturas
             </Link>
             <div className="ml-auto flex items-center gap-4 text-sm text-[var(--muted)]">
-              <Link href="/invoices" className="transition hover:text-[var(--foreground)]">
-                Listado
-              </Link>
-              <Link href="/settings" className="transition hover:text-[var(--foreground)]">
-                Ajustes
-              </Link>
-              <Link href="/users" className="transition hover:text-[var(--foreground)]">
-                Usuarios
-              </Link>
-              <LogoutButton />
+              {session ? (
+                <>
+                  <Link href="/invoices" className="transition hover:text-[var(--foreground)]">
+                    Listado
+                  </Link>
+                  <Link href="/settings" className="transition hover:text-[var(--foreground)]">
+                    Ajustes
+                  </Link>
+                  <Link href="/users" className="transition hover:text-[var(--foreground)]">
+                    Usuarios
+                  </Link>
+                  <LogoutButton />
+                </>
+              ) : (
+                <Link href="/login" className="transition hover:text-[var(--foreground)]">
+                  Entrar
+                </Link>
+              )}
               <ThemeToggle />
               <NavToggle variant="inline" />
             </div>

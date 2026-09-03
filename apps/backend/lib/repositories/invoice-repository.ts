@@ -1,7 +1,8 @@
 import "server-only";
+import { isInvoiceStatus, type InvoiceStatus } from "@facturas/shared/invoice-status";
+import type { InvoiceDTO, InvoiceLineDTO, InvoicePage, InvoiceSummary } from "@facturas/shared/dto";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@/lib/generated/prisma/client";
-import { isInvoiceStatus, type InvoiceStatus } from "@/lib/invoice-status";
 import { num } from "@/lib/repositories/decimal";
 
 /**
@@ -23,56 +24,7 @@ import { num } from "@/lib/repositories/decimal";
 // `number` planos (ya redondeados a 2 decimales al guardarse) para que la
 // capa de servicio trabaje siempre con datos serializables.
 
-export type InvoiceLineDTO = {
-  id: string;
-  position: number;
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  vatRate: number;
-  discountPct: number;
-  lineTotal: number;
-};
-
-export type InvoiceDTO = {
-  id: string;
-  series: string;
-  /** Null mientras es borrador: el número se asigna al emitir. */
-  number: number | null;
-  year: number;
-  status: InvoiceStatus;
-  issueDate: string;
-  dueDate: string | null;
-  currency: string;
-  issuerName: string;
-  issuerTaxId: string;
-  issuerAddress: string;
-  clientName: string;
-  clientTaxId: string;
-  clientAddress: string;
-  clientEmail: string | null;
-  irpfRate: number;
-  notes: string | null;
-  subtotal: number;
-  taxTotal: number;
-  irpfTotal: number;
-  total: number;
-  lines: InvoiceLineDTO[];
-};
-
-export type InvoiceSummary = Pick<
-  InvoiceDTO,
-  | "id"
-  | "series"
-  | "number"
-  | "year"
-  | "status"
-  | "issueDate"
-  | "dueDate"
-  | "clientName"
-  | "total"
-  | "currency"
->;
+export type { InvoiceDTO, InvoiceLineDTO, InvoiceSummary };
 
 /** Fila mínima usada al emitir: solo lo que hace falta para calcular el número. */
 export type InvoiceForIssuing = { series: string; year: number; status: InvoiceStatus };
@@ -182,46 +134,131 @@ export async function getInvoice(id: string): Promise<InvoiceDTO | null> {
   return invoice ? toDTO(invoice) : null;
 }
 
-export async function listInvoices(): Promise<InvoiceSummary[]> {
-  const invoices = await prisma.invoice.findMany({
-    orderBy: [{ year: "desc" }, { series: "asc" }, { number: "desc" }],
-    select: {
-      id: true,
-      series: true,
-      number: true,
-      year: true,
-      status: true,
-      issueDate: true,
-      dueDate: true,
-      clientName: true,
-      total: true,
-      currency: true,
-      createdAt: true,
-    },
-  });
+/** Fila cruda de la consulta paginada: mismos campos que `InvoiceSummary`, sin pasar por Prisma. */
+type InvoiceListRow = {
+  id: string;
+  series: string;
+  number: number | null;
+  year: number;
+  status: string;
+  issueDate: string;
+  dueDate: string | null;
+  clientName: string;
+  total: number;
+  currency: string;
+};
 
-  const summaries: InvoiceSummary[] = invoices.map((invoice) => ({
-    id: invoice.id,
-    series: invoice.series,
-    number: invoice.number,
-    year: invoice.year,
-    status: toStatus(invoice.status),
-    issueDate: invoice.issueDate.toISOString(),
-    dueDate: invoice.dueDate ? invoice.dueDate.toISOString() : null,
-    clientName: invoice.clientName,
-    total: num(invoice.total),
-    currency: invoice.currency,
-  }));
+function toSummaryFromRow(row: InvoiceListRow): InvoiceSummary {
+  return {
+    id: row.id,
+    series: row.series,
+    number: row.number,
+    year: row.year,
+    status: toStatus(row.status),
+    issueDate: row.issueDate,
+    dueDate: row.dueDate,
+    clientName: row.clientName,
+    total: row.total,
+    currency: row.currency,
+  };
+}
 
-  // Los borradores van arriba: son los que piden una decisión. Se ordenan
-  // aparte porque no tienen número y SQLite los mandaría al final.
-  const drafts = invoices
-    .map((invoice, index) => ({ invoice, summary: summaries[index] }))
-    .filter(({ summary }) => summary.status === "BORRADOR")
-    .sort((a, b) => b.invoice.createdAt.getTime() - a.invoice.createdAt.getTime())
-    .map(({ summary }) => summary);
+/**
+ * Escapa `%`, `_` y `\` antes de meter el texto en un `LIKE`: son comodines
+ * de SQL, y sin escaparlos una búsqueda con, por ejemplo, un descuento
+ * "10%" en el texto de una línea se comportaría como un patrón en vez de
+ * como texto literal.
+ */
+function likePattern(search: string): string {
+  return `%${search.replace(/[\\%_]/g, (char) => `\\${char}`)}%`;
+}
 
-  return [...drafts, ...summaries.filter((summary) => summary.status !== "BORRADOR")];
+/**
+ * Mismo filtro en dos formas: `where` tipado (para los `count` por
+ * `prisma.invoice`, que sí soportan filtrar por una relación) y el
+ * fragmento SQL equivalente (para el `SELECT` en crudo de abajo, que no
+ * puede reutilizar un `where` de Prisma). Si se toca uno, hay que tocar el
+ * otro o el recuento y la página dejarían de coincidir.
+ */
+function searchWhere(search: string | undefined): Prisma.InvoiceWhereInput {
+  if (!search) return {};
+  return {
+    OR: [
+      { clientName: { contains: search } },
+      { lines: { some: { description: { contains: search } } } },
+    ],
+  };
+}
+
+function searchFilterSql(search: string | undefined) {
+  if (!search) return Prisma.empty;
+  const pattern = likePattern(search);
+  return Prisma.sql`
+    WHERE (
+      clientName LIKE ${pattern} ESCAPE '\\'
+      OR EXISTS (
+        SELECT 1 FROM "InvoiceLine" li
+        WHERE li."invoiceId" = "Invoice".id AND li.description LIKE ${pattern} ESCAPE '\\'
+      )
+    )
+  `;
+}
+
+/**
+ * Página del listado, paginada en la base de datos con `LIMIT`/`OFFSET`, y
+ * opcionalmente filtrada por cliente o por el texto de una línea.
+ *
+ * SQL en crudo (no `findMany`) porque el orden no es una sola columna: los
+ * borradores (`number` nulo) van siempre primero, por fecha de creación —son
+ * los que piden una decisión—, y el resto por año/serie/correlativo. Ese
+ * orden compuesto no se puede expresar con `orderBy` de Prisma, y sin
+ * expresarlo en la propia consulta, el `LIMIT`/`OFFSET` cortaría las páginas
+ * por el orden equivocado. La búsqueda, en cambio, sí se puede expresar con
+ * `where` de Prisma para los `count` — solo el `SELECT` paginado necesita su
+ * propio fragmento SQL (`searchFilterSql`).
+ */
+export async function listInvoices(
+  page: number,
+  pageSize: number,
+  search?: string,
+): Promise<InvoicePage> {
+  const offset = (page - 1) * pageSize;
+  const where = searchWhere(search);
+
+  const [rows, total, draftsTotal] = await Promise.all([
+    prisma.$queryRaw<InvoiceListRow[]>`
+      SELECT id, series, number, year, status, issueDate, dueDate, clientName, total, currency
+      FROM "Invoice"
+      ${searchFilterSql(search)}
+      ORDER BY
+        CASE WHEN number IS NULL THEN 0 ELSE 1 END ASC,
+        CASE WHEN number IS NULL THEN createdAt END DESC,
+        year DESC,
+        series ASC,
+        number DESC
+      LIMIT ${pageSize} OFFSET ${offset}
+    `,
+    prisma.invoice.count({ where }),
+    prisma.invoice.count({ where: { ...where, number: null } }),
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  // El offset caía fuera de rango (una página vieja en un marcador, o borrada
+  // desde entonces): se repite una sola vez con la última página de verdad en
+  // vez de devolver un hueco vacío.
+  if (page > totalPages) {
+    return listInvoices(totalPages, pageSize, search);
+  }
+
+  return {
+    items: rows.map(toSummaryFromRow),
+    page,
+    pageSize,
+    total,
+    totalPages,
+    draftsTotal,
+  };
 }
 
 /**

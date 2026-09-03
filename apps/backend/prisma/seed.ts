@@ -1,8 +1,8 @@
 import "dotenv/config";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { computeInvoiceTotals } from "@facturas/shared/invoice-math";
 import { prisma } from "../lib/db";
-import { computeInvoiceTotals } from "../lib/invoice-math";
 
 /**
  * Datos de arranque: los ajustes del emisor y veinte facturas de ejemplo para

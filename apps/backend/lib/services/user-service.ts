@@ -1,10 +1,10 @@
 import "server-only";
+import type { UserDTO } from "@facturas/shared/dto";
 import {
   createUser as createUserRow,
   deleteUser as deleteUserRow,
   listUsers as listUsersRow,
   updateUserPassword,
-  type UserDTO,
 } from "@/lib/repositories/user-repository";
 import { hashPassword } from "@/lib/services/auth-service";
 import { NotFoundError, ValidationError } from "@/lib/services/errors";
@@ -40,7 +40,8 @@ function isRecordNotFoundError(error: unknown): boolean {
 }
 
 export async function listUsers(): Promise<UserDTO[]> {
-  return listUsersRow();
+  const rows = await listUsersRow();
+  return rows.map((row) => ({ ...row, createdAt: row.createdAt.toISOString() }));
 }
 
 export async function createUser(formData: FormData): Promise<{ id: string }> {

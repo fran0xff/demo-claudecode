@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import Database from "better-sqlite3";
 import { NextRequest } from "next/server";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { FLASH_COOKIE, parseFlash } from "@/lib/flash";
+import { FLASH_COOKIE, parseFlash } from "@facturas/shared/flash";
 
 /**
  * Tests de integración de las rutas REST de `app/api/users/**`, mismo patrón

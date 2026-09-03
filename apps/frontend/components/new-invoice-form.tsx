@@ -2,7 +2,7 @@
 
 import { InvoiceForm } from "@/components/invoice-form";
 import { createInvoiceAction } from "@/lib/api/invoice-client";
-import type { SettingsDTO } from "@/lib/repositories/settings-repository";
+import type { SettingsDTO } from "@facturas/shared/dto";
 
 type Props = {
   settings: SettingsDTO;

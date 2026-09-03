@@ -246,27 +246,35 @@ body {
 }
 
 /*
- * Aviso de un solo uso: aparece arriba tras crear, guardar, emitir o eliminar,
- * y se retira solo.
+ * Aviso de un solo uso: aparece tras crear, guardar, emitir o eliminar, y se
+ * retira solo.
  *
- * No es una tarjeta flotante sino una anotación al margen del libro: filete de
- * 3 px a la izquierda, del color de la tinta con la que se anota. La regla que
- * se encoge abajo tampoco es adorno —es el tiempo que le queda, dicho con el
- * único recurso que usa esta interfaz, un filete—; sin ella el aviso
- * desaparecería de golpe y parecería un fallo.
+ * Tarjeta emergente centrada bajo la cabecera, no una franja del documento:
+ * por eso `position: fixed` (no ocupa hueco en el flujo de la página) con
+ * solo `left: 50%` — sin `right`, el ancho se ajusta al contenido en vez de
+ * estirarse, y `translateX(-50%)` centra ese cuadro ya encogido. `top` dista
+ * la altura real de `.app-header` (67px con el tamaño de letra por defecto)
+ * más un hueco, para que quede justo debajo y no la tape. El filete de 3 px
+ * a la izquierda mantiene el color de tinta con el que ya se distinguía el
+ * tono del aviso. La regla que se encoge abajo tampoco es adorno —es el
+ * tiempo que le queda, dicho con el único recurso que usa esta interfaz, un
+ * filete—; sin ella el aviso desaparecería de golpe y parecería un fallo.
  */
 .flash {
-  /* Pegajoso para que un cambio de estado hecho al final de un listado largo se
-     siga viendo. Va aquí y no como utilidad de Tailwind porque esta regla no
-     está en ninguna capa y le ganaría a `sticky`; además hace de referencia
-     para la regla del temporizador, que va posicionada. */
-  position: sticky;
-  top: 0.75rem;
+  position: fixed;
+  top: 5.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(26rem, calc(100vw - 3rem));
   overflow: hidden;
   border: 1px solid var(--border);
   border-left: 3px solid var(--accent);
   border-radius: 2px;
   background: var(--accent-soft);
+  /* Única sombra de toda la interfaz: al salir del flujo del papel para
+     flotar sobre él, necesita algo más que el filete para leerse como
+     separado de la página. */
+  box-shadow: 0 12px 28px -10px rgba(0, 0, 0, 0.35);
   animation: flash-entrada 200ms ease-out both;
 }
 
@@ -274,6 +282,10 @@ body {
 .flash-aviso {
   border-left-color: var(--danger);
   background: var(--danger-soft);
+}
+
+.flash-saliendo {
+  animation: flash-salida 160ms ease-in both;
 }
 
 .flash-timer {
@@ -293,7 +305,14 @@ body {
 @keyframes flash-entrada {
   from {
     opacity: 0;
-    transform: translateY(-0.375rem);
+    transform: translate(-50%, -0.75rem) scale(0.98);
+  }
+}
+
+@keyframes flash-salida {
+  to {
+    opacity: 0;
+    transform: translate(-50%, -0.5rem) scale(0.98);
   }
 }
 
@@ -303,10 +322,31 @@ body {
   }
 }
 
-/* Sin animación la regla no mide nada, así que sobra. */
+/* Sin animación la regla no mide nada, así que sobra; y la entrada/salida se
+   reduce a un cambio de opacidad, sin desplazamiento. */
 @media (prefers-reduced-motion: reduce) {
   .flash-timer {
     display: none;
+  }
+
+  .flash {
+    animation: flash-entrada-reducida 1ms both;
+  }
+
+  .flash-saliendo {
+    animation: flash-salida-reducida 1ms both;
+  }
+}
+
+@keyframes flash-entrada-reducida {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes flash-salida-reducida {
+  to {
+    opacity: 0;
   }
 }
 

@@ -3,9 +3,8 @@ import { notFound } from "next/navigation";
 import { EditInvoiceForm } from "@/components/edit-invoice-form";
 import { InvoiceNumber } from "@/components/invoice-number";
 import { toDateInputValue } from "@/lib/format";
-import { formatInvoiceNumber } from "@/lib/invoice-math";
-import { getInvoice } from "@/lib/repositories/invoice-repository";
-import { getSettings } from "@/lib/repositories/settings-repository";
+import { formatInvoiceNumber } from "@facturas/shared/invoice-math";
+import { getInvoice, getSettings } from "@/lib/backend";
 
 export const dynamic = "force-dynamic";
 

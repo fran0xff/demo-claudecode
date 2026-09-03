@@ -7,7 +7,7 @@ import {
   ISSUED_STATUSES,
   STATUS_LABELS,
   type InvoiceStatus,
-} from "@/lib/invoice-status";
+} from "@facturas/shared/invoice-status";
 
 type Props = {
   invoiceId: string;

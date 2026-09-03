@@ -1,0 +1,26 @@
+{
+  "name": "@facturas/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "lint": "eslint ."
+  },
+  "exports": {
+    "./invoice-math": "./lib/invoice-math.ts",
+    "./invoice-status": "./lib/invoice-status.ts",
+    "./flash": "./lib/flash.ts",
+    "./auth-cookie-name": "./lib/auth-cookie-name.ts",
+    "./dto": "./lib/dto.ts",
+    "./jwt-verify": "./lib/jwt-verify.ts"
+  },
+  "dependencies": {
+    "decimal.js": "^10.6.0",
+    "jose": "^6.2.9"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "vitest": "^4.1.10"
+  }
+}

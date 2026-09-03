@@ -1,7 +1,10 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+#
+# Monorepo: sin `/` inicial en la mayoría de patrones, para que apliquen
+# tanto en la raíz como dentro de apps/*, packages/* (npm workspaces).
 
 # dependencies
-/node_modules
+node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -11,14 +14,14 @@
 !.yarn/versions
 
 # testing
-/coverage
+coverage
 
 # next.js
-/.next/
-/out/
+.next/
+out/
 
 # production
-/build
+build
 
 # misc
 .DS_Store
@@ -42,9 +45,9 @@ yarn-error.log*
 next-env.d.ts
 
 # prisma
-/lib/generated/prisma
+**/lib/generated/prisma
 *.db
 *.db-journal
 
 # test artifacts
-/tests/.tmp
+**/tests/.tmp

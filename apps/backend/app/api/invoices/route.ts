@@ -3,9 +3,12 @@ import { setFlash } from "@/lib/flash-cookie";
 import * as invoiceService from "@/lib/services/invoice-service";
 import { SettingsNotConfiguredError, ValidationError } from "@/lib/services/errors";
 
-/** Lista de facturas para la pantalla `/invoices`. Sin lógica que orquestar. */
-export async function GET() {
-  const invoices = await invoiceService.listInvoices();
+/** Página del listado de facturas para la pantalla `/invoices`. */
+export async function GET(request: NextRequest) {
+  const params = new URL(request.url).searchParams;
+  const page = Number(params.get("page")) || 1;
+  const search = params.get("q") ?? undefined;
+  const invoices = await invoiceService.listInvoices(page, search);
   return Response.json(invoices);
 }
 

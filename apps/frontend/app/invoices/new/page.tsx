@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { NewInvoiceForm } from "@/components/new-invoice-form";
 import { toDateInputValue } from "@/lib/format";
-import { getSettings } from "@/lib/repositories/settings-repository";
+import { getSettings } from "@/lib/backend";
 
 export const metadata = { title: "Nueva factura" };
 

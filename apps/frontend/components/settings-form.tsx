@@ -4,8 +4,8 @@ import { useActionState } from "react";
 import { saveSettingsAction } from "@/lib/api/settings-client";
 import { FormField } from "@/components/form-field";
 import { EMPTY_FORM_STATE } from "@/lib/form-state";
-import { VAT_RATES } from "@/lib/invoice-math";
-import type { SettingsDTO } from "@/lib/repositories/settings-repository";
+import { VAT_RATES } from "@facturas/shared/invoice-math";
+import type { SettingsDTO } from "@facturas/shared/dto";
 
 export function SettingsForm({ settings }: { settings: SettingsDTO }) {
   const [state, formAction, pending] = useActionState(saveSettingsAction, EMPTY_FORM_STATE);

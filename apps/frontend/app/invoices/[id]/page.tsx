@@ -6,10 +6,10 @@ import { InvoiceNumber } from "@/components/invoice-number";
 import { InvoiceStatusControl } from "@/components/invoice-status-control";
 import { InvoiceTotals } from "@/components/invoice-totals";
 import { AutoPrint, PrintButton } from "@/components/print-button";
+import { computeInvoiceTotals, formatInvoiceNumber } from "@facturas/shared/invoice-math";
+import { isOverdue } from "@facturas/shared/invoice-status";
 import { formatAmount, formatCurrency, formatDate, formatPercent } from "@/lib/format";
-import { computeInvoiceTotals, formatInvoiceNumber } from "@/lib/invoice-math";
-import { isOverdue } from "@/lib/invoice-status";
-import { getInvoice, nextInvoiceNumber } from "@/lib/repositories/invoice-repository";
+import { getInvoice, nextInvoiceNumber } from "@/lib/backend";
 
 export const dynamic = "force-dynamic";
 
@@ -37,11 +37,12 @@ export default async function InvoicePage({
   const { vatBreakdown } = computeInvoiceTotals(invoice.lines, invoice.irpfRate);
 
   return (
-    <div className="space-y-8">
+    <>
       <AutoPrint enabled={query.imprimir === "1"} />
       <Flash />
 
-      <div className="flex flex-wrap items-start justify-between gap-6">
+      <div className="space-y-8">
+        <div className="flex flex-wrap items-start justify-between gap-6">
         <div>
           <Link
             href="/invoices"
@@ -182,7 +183,8 @@ export default async function InvoicePage({
           />
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 

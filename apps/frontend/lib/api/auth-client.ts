@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { API_URL } from "@/lib/api-url";
 import type { FormState } from "@/lib/form-state";
 
 /**
@@ -14,7 +15,11 @@ const ERROR_GENERICO: FormState = {
 export async function loginAction(_prevState: FormState, formData: FormData): Promise<FormState> {
   let response: Response;
   try {
-    response = await fetch("/api/auth/login", { method: "POST", body: formData });
+    response = await fetch(`${API_URL}/api/auth/login`, {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    });
   } catch {
     return ERROR_GENERICO;
   }

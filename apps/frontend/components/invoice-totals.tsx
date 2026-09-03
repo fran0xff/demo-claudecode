@@ -1,4 +1,4 @@
-import type { VatBreakdownEntry } from "@/lib/invoice-math";
+import type { VatBreakdownEntry } from "@facturas/shared/invoice-math";
 import { formatCurrency, formatPercent } from "@/lib/format";
 
 type Props = {

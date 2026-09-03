@@ -6,8 +6,8 @@ import {
   ValidationError,
   InvoiceNumberConflictError,
 } from "@/lib/services/errors";
-import { computeInvoiceTotals, formatInvoiceNumber } from "@/lib/invoice-math";
-import { isIssuedStatus, type InvoiceStatus } from "@/lib/invoice-status";
+import { computeInvoiceTotals, formatInvoiceNumber } from "@facturas/shared/invoice-math";
+import { isIssuedStatus, type InvoiceStatus } from "@facturas/shared/invoice-status";
 import {
   assignInvoiceNumber,
   createDraftInvoice,
@@ -17,11 +17,12 @@ import {
   findLastInvoiceNumber,
   getInvoice as getInvoiceRow,
   listInvoices as listInvoiceRows,
+  nextInvoiceNumber as nextInvoiceNumberRow,
   replaceInvoiceLinesAndHeader,
   updateInvoiceStatus,
   type InvoiceDTO,
-  type InvoiceSummary,
 } from "@/lib/repositories/invoice-repository";
+import type { InvoicePage } from "@facturas/shared/dto";
 import { getSettings } from "@/lib/repositories/settings-repository";
 import { fieldErrors, invoiceSchema, type InvoiceInput } from "@/lib/validation";
 
@@ -140,9 +141,26 @@ export async function getInvoice(id: string): Promise<InvoiceDTO | null> {
   return getInvoiceRow(id);
 }
 
-/** Listado de facturas para `GET /api/invoices`. Sin lógica que orquestar. */
-export async function listInvoices(): Promise<InvoiceSummary[]> {
-  return listInvoiceRows();
+/** Tamaño de página fijo del listado: no es una preferencia configurable. */
+export const INVOICE_PAGE_SIZE = 10;
+
+/**
+ * Página del listado de facturas para `GET /api/invoices?page=&q=`.
+ *
+ * `search` filtra por cliente o por el texto de una línea; se recorta con
+ * `trim()` aquí (no en la ruta) porque es la misma normalización tanto si
+ * llega de la query string como de una llamada directa al servicio.
+ */
+export async function listInvoices(page: number, search?: string): Promise<InvoicePage> {
+  const safePage = Math.max(1, Math.trunc(page) || 1);
+  const trimmedSearch = search?.trim();
+  return listInvoiceRows(safePage, INVOICE_PAGE_SIZE, trimmedSearch || undefined);
+}
+
+/** Correlativo que le tocaría a la siguiente factura de esa serie y año — solo
+ * informativo, para enseñarlo antes de emitir (ver `GET /api/invoices/next-number`). */
+export async function nextInvoiceNumber(series: string, year: number): Promise<number> {
+  return nextInvoiceNumberRow(series, year);
 }
 
 /**

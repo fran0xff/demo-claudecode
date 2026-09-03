@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import { invoiceNumberParts } from "@/lib/invoice-math";
+import { invoiceNumberParts } from "@facturas/shared/invoice-math";
 
 type Props = {
   series: string;

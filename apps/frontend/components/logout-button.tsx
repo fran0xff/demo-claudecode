@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { API_URL } from "@/lib/api-url";
 
 /**
  * `router.push` en vez de `redirect()` de `next/navigation`: este botón se
@@ -14,7 +15,7 @@ export function LogoutButton() {
   async function handleLogout() {
     // Borra la cookie httpOnly de sesión: no se puede hacer desde
     // `document.cookie` (por eso `handleLogout` no la borra directamente).
-    await fetch("/api/auth/logout", { method: "POST" });
+    await fetch(`${API_URL}/api/auth/logout`, { method: "POST", credentials: "include" });
     router.push("/login");
     router.refresh();
   }

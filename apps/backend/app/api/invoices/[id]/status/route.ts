@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { setFlash } from "@/lib/flash-cookie";
-import { STATUS_LABELS } from "@/lib/invoice-status";
+import { STATUS_LABELS } from "@facturas/shared/invoice-status";
 import * as invoiceService from "@/lib/services/invoice-service";
 
 type RouteParams = { params: Promise<{ id: string }> };

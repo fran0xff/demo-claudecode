@@ -8,9 +8,8 @@ import { InvoiceTotals } from "@/components/invoice-totals";
 import { useInvoiceLines } from "@/hooks/use-invoice-lines";
 import { parseAmountInput, toDateInputValue } from "@/lib/format";
 import { EMPTY_FORM_STATE, type FormState } from "@/lib/form-state";
-import { computeInvoiceTotals, formatInvoiceNumber } from "@/lib/invoice-math";
-import type { InvoiceDTO } from "@/lib/repositories/invoice-repository";
-import type { SettingsDTO } from "@/lib/repositories/settings-repository";
+import { computeInvoiceTotals, formatInvoiceNumber } from "@facturas/shared/invoice-math";
+import type { InvoiceDTO, SettingsDTO } from "@facturas/shared/dto";
 
 type Props = {
   action: (state: FormState, formData: FormData) => Promise<FormState>;

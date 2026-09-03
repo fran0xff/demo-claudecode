@@ -1,33 +1,42 @@
 import "server-only";
 import { cookies } from "next/headers";
-import { AUTH_COOKIE_NAME } from "@/lib/security/auth-cookie-name";
+import { AUTH_COOKIE_NAME } from "@facturas/shared/auth-cookie-name";
 
 /**
  * Cookie httpOnly con el JWT de sesión. Es la única credencial de la app:
- * la lee `proxy.ts` tanto para autorizar la carga de las páginas Server
- * Component (`app/invoices/**`, `app/settings/page.tsx`) como para autorizar
- * las mutaciones bajo `app/api/**`.
+ * la lee `proxy.ts` (de este backend) para autorizar `/api/**`, y la lee
+ * también el `proxy.ts` de `apps/frontend` para decidir si una página
+ * protegida se puede renderizar en servidor.
  *
- * Antes esta cookie no autorizaba `app/api/**` a propósito: se exigía un
- * header `Authorization: Bearer` aparte (guardado en `localStorage`) para no
- * depender de la protección CSRF de `sameSite`. Se abandonó ese diseño
- * porque `sameSite: "lax"` ya impide que un sitio ajeno adjunte esta cookie
- * en la petición que dispararía la mutación (ni en `fetch`/XHR cross-origin,
- * ni en un `<form>` cross-site enviado por POST — solo viajaría en una
- * navegación de nivel superior por GET, y aquí ninguna ruta muta con GET), y
- * mantener el JWT solo aquí evita que un XSS pueda leerlo desde
- * `localStorage` y reutilizarlo fuera de la propia página. Ver el comentario
- * de `proxy.ts` para el razonamiento completo.
+ * `sameSite: "lax"` sigue siendo suficiente aunque backend y frontend sean
+ * dos apps y dos orígenes distintos, porque en producción son subdominios
+ * del mismo dominio raíz (`app.tudominio.com` / `api.tudominio.com`):
+ * `SameSite` se define por sitio (dominio raíz registrable), no por origen,
+ * así que dos subdominios del mismo sitio siguen siendo "same-site" entre
+ * sí — la cookie viaja igual que cuando todo era un solo proceso. Con
+ * dominios de verdad ajenos esto no valdría (haría falta `sameSite: "none"`
+ * + CORS + reabrir la protección CSRF), pero esa opción se descartó a
+ * propósito al migrar a monorepo.
+ *
+ * `domain: COOKIE_DOMAIN` es lo que hace que la vea el subdominio del
+ * frontend además del propio backend que la puso: vacío en local (los dos
+ * apps comparten "localhost" sin necesidad de fijarlo), `.tudominio.com` en
+ * producción.
  */
 export { AUTH_COOKIE_NAME };
 
 // Mismo tiempo de vida que el JWT que contiene (ver `lib/security/jwt.ts`).
 const MAX_AGE_SECONDS = 60 * 60 * 24;
 
+function cookieDomain(): string | undefined {
+  return process.env.COOKIE_DOMAIN || undefined;
+}
+
 export async function setAuthCookie(token: string): Promise<void> {
   const store = await cookies();
   store.set(AUTH_COOKIE_NAME, token, {
     path: "/",
+    domain: cookieDomain(),
     sameSite: "lax",
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -37,5 +46,5 @@ export async function setAuthCookie(token: string): Promise<void> {
 
 export async function clearAuthCookie(): Promise<void> {
   const store = await cookies();
-  store.delete(AUTH_COOKIE_NAME);
+  store.delete({ name: AUTH_COOKIE_NAME, path: "/", domain: cookieDomain() });
 }

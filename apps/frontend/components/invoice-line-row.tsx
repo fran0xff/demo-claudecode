@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import type { LineState } from "@/hooks/use-invoice-lines";
 import { formatCurrency } from "@/lib/format";
-import { VAT_RATES } from "@/lib/invoice-math";
+import { VAT_RATES } from "@facturas/shared/invoice-math";
 
 type Props = {
   line: LineState;

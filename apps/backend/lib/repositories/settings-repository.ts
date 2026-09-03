@@ -1,4 +1,5 @@
 import "server-only";
+import type { SettingsDTO } from "@facturas/shared/dto";
 import { prisma } from "@/lib/db";
 import { num } from "@/lib/repositories/decimal";
 
@@ -9,13 +10,7 @@ import { num } from "@/lib/repositories/decimal";
  * los `Decimal` de Prisma se convierten a `number` plano.
  */
 
-export type SettingsDTO = {
-  issuerName: string;
-  issuerTaxId: string;
-  issuerAddress: string;
-  defaultSeries: string;
-  defaultVatRate: number;
-};
+export type { SettingsDTO };
 
 /** Ajustes usados cuando aún no se ha configurado el emisor. */
 export const DEFAULT_SETTINGS: SettingsDTO = {

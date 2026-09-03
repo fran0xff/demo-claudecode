@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import Database from "better-sqlite3";
 import { NextRequest } from "next/server";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { FLASH_COOKIE, parseFlash } from "@/lib/flash";
+import { FLASH_COOKIE, parseFlash } from "@facturas/shared/flash";
 
 /**
  * Tests de integración de las rutas REST contra una base de datos SQLite
@@ -181,10 +181,80 @@ describe("GET /api/invoices", () => {
   it("lista las facturas", async () => {
     await createDraft();
 
-    const response = await invoicesRoute.GET();
+    const response = await invoicesRoute.GET(new NextRequest("http://localhost/api/invoices"));
     expect(response.status).toBe(200);
-    const body = (await response.json()) as unknown[];
-    expect(body).toHaveLength(1);
+    const body = (await response.json()) as { items: unknown[]; total: number };
+    expect(body.items).toHaveLength(1);
+    expect(body.total).toBe(1);
+  });
+
+  it("pagina con offset/limit reales", async () => {
+    for (let i = 0; i < 15; i++) await createDraft();
+
+    const page1 = await invoicesRoute.GET(new NextRequest("http://localhost/api/invoices?page=1"));
+    const body1 = (await page1.json()) as { items: unknown[]; page: number; totalPages: number };
+    expect(body1.items).toHaveLength(10);
+    expect(body1.page).toBe(1);
+    expect(body1.totalPages).toBe(2);
+
+    const page2 = await invoicesRoute.GET(new NextRequest("http://localhost/api/invoices?page=2"));
+    const body2 = (await page2.json()) as { items: unknown[]; page: number };
+    expect(body2.items).toHaveLength(5);
+    expect(body2.page).toBe(2);
+  });
+
+  it("busca por cliente, sin distinguir mayúsculas", async () => {
+    await createDraft({ clientName: "Ferretería Bermejo S.L." });
+    await createDraft({ clientName: "Óptica Villanueva" });
+
+    const response = await invoicesRoute.GET(
+      new NextRequest(`http://localhost/api/invoices?q=${encodeURIComponent("bermejo")}`),
+    );
+    const body = (await response.json()) as { items: { clientName: string }[] };
+    expect(body.items).toHaveLength(1);
+    expect(body.items[0].clientName).toBe("Ferretería Bermejo S.L.");
+
+    const caseInsensitive = await invoicesRoute.GET(
+      new NextRequest(`http://localhost/api/invoices?q=${encodeURIComponent("VILLANUEVA")}`),
+    );
+    const bodyCi = (await caseInsensitive.json()) as { items: unknown[] };
+    expect(bodyCi.items).toHaveLength(1);
+  });
+
+  it("busca por el texto de una línea", async () => {
+    await createDraft({ "lines.0.description": "Diseño de logotipo" });
+    await createDraft(); // usa "Consultoría" / "Material impreso" por defecto
+
+    const response = await invoicesRoute.GET(
+      new NextRequest(`http://localhost/api/invoices?q=${encodeURIComponent("logotipo")}`),
+    );
+    const body = (await response.json()) as { items: unknown[]; total: number };
+    expect(body.items).toHaveLength(1);
+    expect(body.total).toBe(1);
+  });
+
+  it("escapa los comodines de LIKE en la búsqueda", async () => {
+    await createDraft({ clientName: "Descuentos 10% S.L." });
+    await createDraft({ clientName: "Otro cliente cualquiera" });
+
+    const response = await invoicesRoute.GET(
+      new NextRequest(`http://localhost/api/invoices?q=${encodeURIComponent("10%")}`),
+    );
+    const body = (await response.json()) as { items: { clientName: string }[] };
+    expect(body.items).toHaveLength(1);
+    expect(body.items[0].clientName).toBe("Descuentos 10% S.L.");
+  });
+
+  it("no se encuentra nada con una búsqueda sin coincidencias", async () => {
+    await createDraft();
+
+    const response = await invoicesRoute.GET(
+      new NextRequest(`http://localhost/api/invoices?q=${encodeURIComponent("no existe esto")}`),
+    );
+    const body = (await response.json()) as { items: unknown[]; total: number; totalPages: number };
+    expect(body.items).toHaveLength(0);
+    expect(body.total).toBe(0);
+    expect(body.totalPages).toBe(1);
   });
 });
 

@@ -24,13 +24,15 @@ export async function createUser(email: string, passwordHash: string): Promise<{
   return { id: user.id };
 }
 
-export type UserDTO = {
+/** Fila cruda de Prisma: `createdAt` todavía es un `Date`, no la forma que
+ * cruza la red (`UserDTO` de `@facturas/shared/dto`, con `createdAt: string`). */
+export type UserRow = {
   id: string;
   email: string;
   createdAt: Date;
 };
 
-export async function listUsers(): Promise<UserDTO[]> {
+export async function listUsers(): Promise<UserRow[]> {
   return prisma.user.findMany({
     orderBy: { createdAt: "asc" },
     select: { id: true, email: true, createdAt: true },

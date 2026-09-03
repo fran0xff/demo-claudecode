@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { setFlash } from "@/lib/flash-cookie";
-import { formatInvoiceNumber } from "@/lib/invoice-math";
+import { formatInvoiceNumber } from "@facturas/shared/invoice-math";
 import * as invoiceService from "@/lib/services/invoice-service";
 import { InvoiceNumberConflictError } from "@/lib/services/errors";
 
