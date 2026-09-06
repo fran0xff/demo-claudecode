@@ -201,6 +201,14 @@ sin refresh token — un solo operador local no necesita renovación silenciosa)
 reexportando la verificación desde `@facturas/shared/jwt-verify`. El login no
 devuelve el token en el body: nada que un XSS pueda leer desde `localStorage`.
 
+**Tampoco hay revocación de sesión del lado servidor**: "cerrar sesión" solo
+borra la cookie (`clearAuthCookie`), así que un token que ya haya salido de
+la cookie (copiado, filtrado en un log) sigue siendo válido hasta que
+expiran sus 24h, sin forma de invalidarlo antes. Misma decisión que "sin
+refresh token" — un operador único local no justifica mantener una lista de
+tokens revocados (`jti` + almacén con TTL) solo para acortar esa ventana. Si
+el modelo de amenaza cambia, ese es el mecanismo a añadir.
+
 `lib/security/rate-limit.ts` tiene dos limitadores independientes, en
 memoria y por proceso (sin Redis: app local de un solo operador, no hay
 infraestructura compartida que justificar):

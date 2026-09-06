@@ -53,7 +53,14 @@ export type AuthTokenPayload = {
  */
 export async function verifyAuthToken(token: string): Promise<AuthTokenPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, secret, { algorithms: [ALGORITHM] });
+    // `clockTolerance` en segundos: backend y frontend verifican el mismo
+    // token en procesos (y en producción, máquinas) distintos, así que un
+    // pequeño desfase de reloj entre ellos no debe rechazar un token válido
+    // justo en el borde de la expiración.
+    const { payload } = await jwtVerify(token, secret, {
+      algorithms: [ALGORITHM],
+      clockTolerance: 5,
+    });
     if (typeof payload.sub !== "string" || typeof payload.email !== "string") return null;
     return { sub: payload.sub, email: payload.email };
   } catch {
