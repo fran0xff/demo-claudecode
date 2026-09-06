@@ -1,0 +1,285 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - navigation [ref=e3]:
+      - link "Facturas" [ref=e4] [cursor=pointer]:
+        - /url: /invoices
+      - generic [ref=e5]:
+        - link "Entrar" [ref=e6] [cursor=pointer]:
+          - /url: /login
+        - group "Tema" [ref=e7]:
+          - button "Sistema" [pressed] [ref=e8]
+          - button "Claro" [ref=e13]
+          - button "Oscuro" [ref=e18]
+        - button "Ocultar el menú" [expanded] [ref=e22]
+  - main [ref=e26]:
+    - generic [ref=e57]:
+      - generic [ref=e58]:
+        - generic [ref=e59]:
+          - heading "Facturas" [level=1] [ref=e60]
+          - paragraph [ref=e61]:
+            - text: 1 borrador · 21 emitidas. La siguiente que emitas llevará el número
+            - generic [ref=e62]: A-2026-0022
+            - text: .
+        - link "Nueva factura" [ref=e63] [cursor=pointer]:
+          - /url: /invoices/new
+      - generic [ref=e64]:
+        - complementary [ref=e66]:
+          - generic [ref=e67]:
+            - heading "Filtros" [level=2] [ref=e68]
+            - button "Ocultar filtros" [expanded] [ref=e69]
+          - generic [ref=e73]:
+            - group "Fecha de emisión" [ref=e74]:
+              - generic [ref=e76]: Desde
+              - textbox "Desde" [ref=e77]
+              - generic [ref=e78]: Hasta
+              - textbox "Hasta" [ref=e79]
+            - group "Importe" [ref=e80]:
+              - generic [ref=e82]: Mínimo
+              - spinbutton "Mínimo" [ref=e83]
+              - generic [ref=e84]: Máximo
+              - spinbutton "Máximo" [ref=e85]
+            - group "Estado" [ref=e86]:
+              - generic [ref=e88]:
+                - checkbox "Borrador" [ref=e89]
+                - text: Borrador
+              - generic [ref=e90]:
+                - checkbox "Emitida" [ref=e91]
+                - text: Emitida
+              - generic [ref=e92]:
+                - checkbox "Enviada" [ref=e93]
+                - text: Enviada
+              - generic [ref=e94]:
+                - checkbox "Pagada" [ref=e95]
+                - text: Pagada
+            - button "Aplicar filtros" [ref=e96]
+        - generic [ref=e97]:
+          - search [ref=e98]:
+            - searchbox "Buscar facturas" [ref=e99]
+            - button "Buscar" [ref=e100]
+          - table [ref=e102]:
+            - rowgroup [ref=e103]:
+              - row [ref=e104]:
+                - columnheader "Número" [ref=e105]
+                - columnheader "Estado" [ref=e106]
+                - columnheader "Fecha" [ref=e107]
+                - columnheader "Cliente" [ref=e108]
+                - columnheader "Total" [ref=e109]
+                - columnheader "Acciones" [ref=e110]
+            - rowgroup [ref=e111]:
+              - row [ref=e112]:
+                - cell [ref=e113]:
+                  - link "Borrador" [ref=e114] [cursor=pointer]:
+                    - /url: /invoices/cmtmme2r300009gtvr4udj4qr
+                - cell [ref=e115]:
+                  - button "Emitir" [ref=e119]
+                - cell "04/09/2026" [ref=e120]
+                - cell "Luis Arévalo" [ref=e121]
+                - cell "847,00 €" [ref=e122]
+                - cell [ref=e123]:
+                  - generic [ref=e124]:
+                    - link "Editar" [ref=e125] [cursor=pointer]:
+                      - /url: /invoices/cmtmme2r300009gtvr4udj4qr/edit
+                    - link "PDF" [ref=e126] [cursor=pointer]:
+                      - /url: /invoices/cmtmme2r300009gtvr4udj4qr?imprimir=1
+              - row [ref=e127]:
+                - cell [ref=e128]:
+                  - link "A-2026-0021" [ref=e129] [cursor=pointer]:
+                    - /url: /invoices/cmt2vl7130009nwtvixg3a3rr
+                - cell [ref=e131]:
+                  - generic [ref=e134]:
+                    - combobox "Estado de la factura" [ref=e135] [cursor=pointer]:
+                      - option "Emitida" [selected]
+                      - option "Enviada"
+                      - option "Pagada"
+                    - button "Guardar estado" [ref=e136]
+                - cell "21/08/2026" [ref=e137]
+                - cell "Ferretería Bermejo S.L." [ref=e138]
+                - cell "148,83 €" [ref=e139]
+                - cell [ref=e140]:
+                  - generic [ref=e141]:
+                    - link "Editar" [ref=e142] [cursor=pointer]:
+                      - /url: /invoices/cmt2vl7130009nwtvixg3a3rr/edit
+                    - link "PDF" [ref=e143] [cursor=pointer]:
+                      - /url: /invoices/cmt2vl7130009nwtvixg3a3rr?imprimir=1
+              - row [ref=e144]:
+                - cell [ref=e145]:
+                  - link "A-2026-0020" [ref=e146] [cursor=pointer]:
+                    - /url: /invoices/cmt18veej001amktvmq713oib
+                - cell [ref=e148]:
+                  - generic [ref=e151]:
+                    - combobox "Estado de la factura" [ref=e152] [cursor=pointer]:
+                      - option "Emitida" [selected]
+                      - option "Enviada"
+                      - option "Pagada"
+                    - button "Guardar estado" [ref=e153]
+                - cell "01/12/2026" [ref=e154]
+                - cell "Rosa Bermúdez Perez" [ref=e155]
+                - cell "1717,20 €" [ref=e156]
+                - cell [ref=e157]:
+                  - generic [ref=e158]:
+                    - link "Editar" [ref=e159] [cursor=pointer]:
+                      - /url: /invoices/cmt18veej001amktvmq713oib/edit
+                    - link "PDF" [ref=e160] [cursor=pointer]:
+                      - /url: /invoices/cmt18veej001amktvmq713oib?imprimir=1
+              - row [ref=e161]:
+                - cell [ref=e162]:
+                  - link "A-2026-0019" [ref=e163] [cursor=pointer]:
+                    - /url: /invoices/cmt18vebt0017mktvhlj5ua3z
+                - cell [ref=e165]:
+                  - generic [ref=e168]:
+                    - combobox "Estado de la factura" [ref=e169] [cursor=pointer]:
+                      - option "Emitida" [selected]
+                      - option "Enviada"
+                      - option "Pagada"
+                    - button "Guardar estado" [ref=e170]
+                - cell "03/11/2026" [ref=e171]
+                - cell "Estación de Servicio Poniente S.L." [ref=e172]
+                - cell "1512,50 €" [ref=e173]
+                - cell [ref=e174]:
+                  - generic [ref=e175]:
+                    - link "Editar" [ref=e176] [cursor=pointer]:
+                      - /url: /invoices/cmt18vebt0017mktvhlj5ua3z/edit
+                    - link "PDF" [ref=e177] [cursor=pointer]:
+                      - /url: /invoices/cmt18vebt0017mktvhlj5ua3z?imprimir=1
+              - row [ref=e178]:
+                - cell [ref=e179]:
+                  - link "A-2026-0018" [ref=e180] [cursor=pointer]:
+                    - /url: /invoices/cmt18ve8w0014mktv20i4ifvs
+                - cell [ref=e182]:
+                  - generic [ref=e185]:
+                    - combobox "Estado de la factura" [ref=e186] [cursor=pointer]:
+                      - option "Emitida" [selected]
+                      - option "Enviada"
+                      - option "Pagada"
+                    - button "Guardar estado" [ref=e187]
+                - cell "12/10/2026" [ref=e188]
+                - cell "Aromas del Sur S.L." [ref=e189]
+                - cell "1027,20 €" [ref=e190]
+                - cell [ref=e191]:
+                  - generic [ref=e192]:
+                    - link "Editar" [ref=e193] [cursor=pointer]:
+                      - /url: /invoices/cmt18ve8w0014mktv20i4ifvs/edit
+                    - link "PDF" [ref=e194] [cursor=pointer]:
+                      - /url: /invoices/cmt18ve8w0014mktv20i4ifvs?imprimir=1
+              - row [ref=e195]:
+                - cell [ref=e196]:
+                  - link "A-2026-0017" [ref=e197] [cursor=pointer]:
+                    - /url: /invoices/cmt18ve5j0011mktvrfip0fjv
+                - cell [ref=e199]:
+                  - generic [ref=e202]:
+                    - combobox "Estado de la factura" [ref=e203] [cursor=pointer]:
+                      - option "Emitida" [selected]
+                      - option "Enviada"
+                      - option "Pagada"
+                    - button "Guardar estado" [ref=e204]
+                - cell "28/09/2026" [ref=e205]
+                - cell "Farmacia Cendán" [ref=e206]
+                - cell "763,80 €" [ref=e207]
+                - cell [ref=e208]:
+                  - generic [ref=e209]:
+                    - link "Editar" [ref=e210] [cursor=pointer]:
+                      - /url: /invoices/cmt18ve5j0011mktvrfip0fjv/edit
+                    - link "PDF" [ref=e211] [cursor=pointer]:
+                      - /url: /invoices/cmt18ve5j0011mktvrfip0fjv?imprimir=1
+              - row [ref=e212]:
+                - cell [ref=e213]:
+                  - link "A-2026-0016" [ref=e214] [cursor=pointer]:
+                    - /url: /invoices/cmt18ve27000ymktvev38o1uu
+                - cell [ref=e216]:
+                  - generic [ref=e219]:
+                    - combobox "Estado de la factura" [ref=e220] [cursor=pointer]:
+                      - option "Emitida" [selected]
+                      - option "Enviada"
+                      - option "Pagada"
+                    - button "Guardar estado" [ref=e221]
+                - cell "09/09/2026" [ref=e222]
+                - cell "Constructora Meridiano S.A." [ref=e223]
+                - cell "3363,80 €" [ref=e224]
+                - cell [ref=e225]:
+                  - generic [ref=e226]:
+                    - link "Editar" [ref=e227] [cursor=pointer]:
+                      - /url: /invoices/cmt18ve27000ymktvev38o1uu/edit
+                    - link "PDF" [ref=e228] [cursor=pointer]:
+                      - /url: /invoices/cmt18ve27000ymktvev38o1uu?imprimir=1
+              - row [ref=e229]:
+                - cell [ref=e230]:
+                  - link "A-2026-0015" [ref=e231] [cursor=pointer]:
+                    - /url: /invoices/cmt18vdzh000vmktvzqn8mp0o
+                - cell [ref=e233]:
+                  - generic [ref=e236]:
+                    - combobox "Estado de la factura" [ref=e237] [cursor=pointer]:
+                      - option "Emitida"
+                      - option "Enviada" [selected]
+                      - option "Pagada"
+                    - button "Guardar estado" [ref=e238]
+                - cell "21/08/2026" [ref=e239]
+                - cell "Supermercados Rioja S.L." [ref=e240]
+                - cell "1474,80 €" [ref=e241]
+                - cell [ref=e242]:
+                  - generic [ref=e243]:
+                    - link "Editar" [ref=e244] [cursor=pointer]:
+                      - /url: /invoices/cmt18vdzh000vmktvzqn8mp0o/edit
+                    - link "PDF" [ref=e245] [cursor=pointer]:
+                      - /url: /invoices/cmt18vdzh000vmktvzqn8mp0o?imprimir=1
+              - row [ref=e246]:
+                - cell [ref=e247]:
+                  - link "A-2026-0014" [ref=e248] [cursor=pointer]:
+                    - /url: /invoices/cmt18vdvz000smktvzjv3xned
+                - cell "Emitida Guardar estado Vencida" [ref=e250]:
+                  - generic [ref=e251]:
+                    - generic [ref=e253]:
+                      - combobox "Estado de la factura" [ref=e254] [cursor=pointer]:
+                        - option "Emitida" [selected]
+                        - option "Enviada"
+                        - option "Pagada"
+                      - button "Guardar estado" [ref=e255]
+                    - generic "La fecha de vencimiento ya pasó" [ref=e256]: Vencida
+                - cell "05/08/2026" [ref=e257]
+                - cell "Javier Roldán Muñoz" [ref=e258]
+                - cell "1579,40 €" [ref=e259]
+                - cell [ref=e260]:
+                  - generic [ref=e261]:
+                    - link "Editar" [ref=e262] [cursor=pointer]:
+                      - /url: /invoices/cmt18vdvz000smktvzjv3xned/edit
+                    - link "PDF" [ref=e263] [cursor=pointer]:
+                      - /url: /invoices/cmt18vdvz000smktvzjv3xned?imprimir=1
+              - row [ref=e264]:
+                - cell [ref=e265]:
+                  - link "A-2026-0013" [ref=e266] [cursor=pointer]:
+                    - /url: /invoices/cmt18vdt3000pmktv9w9uappr
+                - cell "Emitida Guardar estado Vencida" [ref=e268]:
+                  - generic [ref=e269]:
+                    - generic [ref=e271]:
+                      - combobox "Estado de la factura" [ref=e272] [cursor=pointer]:
+                        - option "Emitida" [selected]
+                        - option "Enviada"
+                        - option "Pagada"
+                      - button "Guardar estado" [ref=e273]
+                    - generic "La fecha de vencimiento ya pasó" [ref=e274]: Vencida
+                - cell "25/07/2026" [ref=e275]
+                - cell "Academia de Idiomas Polyglot S.L." [ref=e276]
+                - cell "1658,80 €" [ref=e277]
+                - cell [ref=e278]:
+                  - generic [ref=e279]:
+                    - link "Editar" [ref=e280] [cursor=pointer]:
+                      - /url: /invoices/cmt18vdt3000pmktv9w9uappr/edit
+                    - link "PDF" [ref=e281] [cursor=pointer]:
+                      - /url: /invoices/cmt18vdt3000pmktv9w9uappr?imprimir=1
+          - navigation "Paginación de facturas" [ref=e282]:
+            - generic [ref=e283]: « Primera
+            - generic [ref=e284]: ‹ Anterior
+            - list [ref=e285]:
+              - listitem [ref=e286]:
+                - generic [ref=e287]: "1"
+              - listitem [ref=e288]:
+                - link "2" [ref=e289] [cursor=pointer]:
+                  - /url: /invoices?page=2
+              - listitem [ref=e290]:
+                - link "3" [ref=e291] [cursor=pointer]:
+                  - /url: /invoices?page=3
+            - link "Siguiente ›" [ref=e292] [cursor=pointer]:
+              - /url: /invoices?page=2
+            - link "Última »" [ref=e293] [cursor=pointer]:
+              - /url: /invoices?page=3
+  - button "Open Next.js Dev Tools" [ref=e44] [cursor=pointer]
+  - alert [ref=e48]: Facturas

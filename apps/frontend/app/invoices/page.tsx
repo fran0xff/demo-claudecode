@@ -5,6 +5,7 @@ import { InvoiceStatusControl } from "@/components/invoice-status-control";
 import { InvoicesFiltersSidebar } from "@/components/invoices-filters-sidebar";
 import { Pagination } from "@/components/pagination";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { formatInvoiceNumber } from "@facturas/shared/invoice-math";
 import { isOverdue } from "@facturas/shared/invoice-status";
 import { getSettings, listInvoices, nextInvoiceNumber } from "@/lib/backend";
 
@@ -164,22 +165,29 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
                 </Link>
               </div>
             ) : (
-              <div className="card overflow-x-auto">
-                <table className="ledger ledger-rows min-w-[52rem] text-sm">
-                  <thead>
+              <div className="card max-h-[70vh] overflow-y-auto overflow-x-hidden">
+                <table className="ledger ledger-rows w-full table-fixed text-sm">
+                  <thead className="sticky top-0 z-10 bg-[var(--surface)]">
                     <tr>
-                      <th>Número</th>
-                      <th>Estado</th>
-                      <th>Fecha</th>
-                      <th>Cliente</th>
-                      <th className="num">Total</th>
-                      <th className="num">Acciones</th>
+                      <th className="w-[14%]">Número</th>
+                      <th className="w-[20%]">Estado</th>
+                      <th className="w-[13%]">Fecha</th>
+                      <th className="w-[27%]">Cliente</th>
+                      <th className="num w-[13%]">Total</th>
+                      <th className="num w-[13%]">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     {invoices.map((invoice) => (
                       <tr key={invoice.id} className="transition-colors">
-                        <td>
+                        <td
+                          className="truncate"
+                          title={
+                            invoice.number === null
+                              ? "Borrador"
+                              : formatInvoiceNumber(invoice.series, invoice.year, invoice.number)
+                          }
+                        >
                           <Link
                             href={`/invoices/${invoice.id}`}
                             className="text-[var(--accent)] hover:underline"
@@ -197,7 +205,7 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
                         </td>
 
                         <td>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <InvoiceStatusControl
                               invoiceId={invoice.id}
                               status={invoice.status}
@@ -210,15 +218,17 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
                           </div>
                         </td>
 
-                        <td className="tabular text-[var(--muted)]">
+                        <td className="tabular whitespace-nowrap text-[var(--muted)]">
                           {formatDate(invoice.issueDate)}
                         </td>
-                        <td>{invoice.clientName}</td>
-                        <td className="tabular num text-[0.9375rem] font-semibold">
+                        <td className="truncate" title={invoice.clientName}>
+                          {invoice.clientName}
+                        </td>
+                        <td className="tabular num whitespace-nowrap text-[0.9375rem] font-semibold">
                           {formatCurrency(invoice.total, invoice.currency)}
                         </td>
 
-                        <td className="num">
+                        <td className="num whitespace-nowrap">
                           <span className="inline-flex items-center gap-3 text-sm">
                             <Link
                               href={`/invoices/${invoice.id}/edit`}

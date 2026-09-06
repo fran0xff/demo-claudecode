@@ -1,0 +1,28 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - navigation [ref=e3]:
+      - link "Facturas" [ref=e4] [cursor=pointer]:
+        - /url: /invoices
+      - generic [ref=e5]:
+        - link "Entrar" [ref=e6] [cursor=pointer]:
+          - /url: /login
+        - group "Tema" [ref=e7]:
+          - button "Sistema" [pressed] [ref=e8]
+          - button "Claro" [ref=e13]
+          - button "Oscuro" [ref=e18]
+        - button "Ocultar el menú" [expanded] [ref=e22]
+  - main [ref=e26]:
+    - generic [ref=e27]:
+      - generic [ref=e28]:
+        - heading "Iniciar sesión" [level=1] [ref=e29]
+        - paragraph [ref=e30]: Accede con tu email y contraseña.
+      - generic [ref=e31]:
+        - generic [ref=e32]:
+          - generic [ref=e33]: Email
+          - textbox "Email" [ref=e34]:
+            - /placeholder: correo@ejemplo.com
+        - generic [ref=e35]:
+          - generic [ref=e36]: Contraseña
+          - textbox "Contraseña" [ref=e37]
+        - button "Entrar" [ref=e38]
+  - button "Open Next.js Dev Tools" [ref=e44] [cursor=pointer]

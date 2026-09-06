@@ -1,0 +1,117 @@
+- generic [active] [ref=f2e1]:
+  - banner [ref=f2e2]:
+    - navigation [ref=f2e3]:
+      - link "Facturas" [ref=f2e4] [cursor=pointer]:
+        - /url: /invoices
+      - generic [ref=f2e5]:
+        - link "Listado" [ref=f2e6] [cursor=pointer]:
+          - /url: /invoices
+        - link "Ajustes" [ref=f2e7] [cursor=pointer]:
+          - /url: /settings
+        - link "Usuarios" [ref=f2e8] [cursor=pointer]:
+          - /url: /users
+        - button "Salir" [ref=f2e9]
+        - group "Tema" [ref=f2e10]:
+          - button "Sistema" [pressed] [ref=f2e11]
+          - button "Claro" [ref=f2e16]
+          - button "Oscuro" [ref=f2e21]
+        - button "Ocultar el menú" [expanded] [ref=f2e25]
+  - main [ref=f2e29]:
+    - generic [ref=f2e201]:
+      - generic [ref=f2e202]:
+        - link "← Borrador" [ref=f2e203] [cursor=pointer]:
+          - /url: /invoices/cmtmogdwm00039gtvvh2g6x7g
+        - paragraph [ref=f2e204]: Editando
+        - heading "Borrador" [level=1] [ref=f2e205]
+        - paragraph [ref=f2e206]: "Todavía no ha gastado correlativo, así que puedes cambiarle la serie y la fecha: el número se decide al emitirla."
+      - generic [ref=f2e207]:
+        - generic [ref=f2e208]:
+          - heading "Datos de la factura" [level=2] [ref=f2e209]
+          - generic [ref=f2e210]:
+            - generic [ref=f2e211]:
+              - generic [ref=f2e212]: Serie
+              - textbox "Serie" [ref=f2e213]: A
+            - generic [ref=f2e214]:
+              - generic [ref=f2e215]: Fecha de emisión
+              - textbox "Fecha de emisión" [ref=f2e216]: 2026-09-04
+            - generic [ref=f2e217]:
+              - generic [ref=f2e218]:
+                - text: Vencimiento
+                - generic [ref=f2e219]: (opcional)
+              - textbox "Vencimiento (opcional)" [ref=f2e220]
+        - generic [ref=f2e221]:
+          - heading "Cliente" [level=2] [ref=f2e222]
+          - generic [ref=f2e223]:
+            - generic [ref=f2e224]:
+              - generic [ref=f2e225]: Nombre o razón social
+              - textbox "Nombre o razón social" [ref=f2e226]: Cliente Prueba Playwright
+            - generic [ref=f2e227]:
+              - generic [ref=f2e228]: NIF / CIF
+              - textbox "NIF / CIF" [ref=f2e229]:
+                - /placeholder: B12345674
+                - text: X1234567L
+            - generic [ref=f2e230]:
+              - generic [ref=f2e231]: Dirección
+              - textbox "Dirección" [ref=f2e232]: Calle de Prueba 1, Madrid
+            - generic [ref=f2e233]:
+              - generic [ref=f2e234]:
+                - text: Email
+                - generic [ref=f2e235]: (opcional)
+              - textbox "Email (opcional)" [ref=f2e236]
+        - generic [ref=f2e237]:
+          - generic [ref=f2e238]:
+            - heading "Líneas" [level=2] [ref=f2e239]
+            - button "Añadir línea" [ref=f2e240]
+          - generic [ref=f2e242]:
+            - generic [ref=f2e243]:
+              - generic [ref=f2e244]: Descripción
+              - textbox "Descripción de la línea 1" [ref=f2e245]: Servicio de prueba E2E
+            - generic [ref=f2e246]:
+              - generic [ref=f2e247]: Cantidad
+              - spinbutton "Cantidad de la línea 1" [ref=f2e248]: "1"
+            - generic [ref=f2e249]:
+              - generic [ref=f2e250]: Precio
+              - spinbutton "Precio unitario de la línea 1" [ref=f2e251]: "100"
+            - generic [ref=f2e252]:
+              - generic [ref=f2e253]: Dto. %
+              - spinbutton "Descuento en porcentaje de la línea 1" [ref=f2e254]: "0"
+            - generic [ref=f2e255]:
+              - generic [ref=f2e256]: IVA
+              - combobox "Tipo de IVA de la línea 1" [ref=f2e257]:
+                - option "21 %" [selected]
+                - option "10 %"
+                - option "4 %"
+                - option "0 %"
+            - generic [ref=f2e258]:
+              - generic [ref=f2e259]: Importe
+              - paragraph [ref=f2e260]: 100,00 €
+            - button "Eliminar línea 1" [disabled] [ref=f2e262]: ✕
+        - generic [ref=f2e263]:
+          - generic [ref=f2e264]:
+            - generic [ref=f2e265]:
+              - generic [ref=f2e266]: Retención IRPF (%)
+              - spinbutton "Retención IRPF (%)" [ref=f2e267]: "0"
+            - generic [ref=f2e268]:
+              - generic [ref=f2e269]:
+                - text: Notas
+                - generic [ref=f2e270]: (opcional)
+              - textbox "Notas (opcional)" [ref=f2e271]:
+                - /placeholder: Forma de pago, número de cuenta, condiciones…
+          - generic [ref=f2e272]:
+            - heading "Resumen" [level=2] [ref=f2e273]
+            - generic [ref=f2e274]:
+              - generic [ref=f2e275]:
+                - term [ref=f2e276]: Base imponible
+                - definition [ref=f2e277]: 100,00 €
+              - generic [ref=f2e278]:
+                - term [ref=f2e279]: IVA 21 % sobre 100,00 €
+                - definition [ref=f2e280]: 21,00 €
+              - generic [ref=f2e281]:
+                - term [ref=f2e282]: Total
+                - definition [ref=f2e283]: 121,00 €
+        - generic [ref=f2e284]:
+          - button "Guardar cambios" [ref=f2e285]
+          - link "Cancelar" [ref=f2e286] [cursor=pointer]:
+            - /url: /invoices/cmtmogdwm00039gtvvh2g6x7g
+  - button "Open Next.js Dev Tools" [ref=f2e120] [cursor=pointer]
+  - alert [ref=f2e124]: Borrador

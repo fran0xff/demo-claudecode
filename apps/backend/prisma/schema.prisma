@@ -99,3 +99,14 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
+
+/// Producto o artículo de catálogo.
+model Product {
+  id        Int      @id @default(autoincrement())
+  name      String
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("products")
+}
