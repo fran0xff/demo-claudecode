@@ -17,6 +17,7 @@ workspaces, sin Turborepo ni pnpm):
 ```
 apps/backend/    # Next.js 16, solo app/api/** — la única que toca Prisma/Postgres
 apps/frontend/   # Next.js 16, solo páginas — nunca toca la base de datos
+apps/mcp-clima/  # Servidor MCP standalone (stdio, sin Next.js): tiempo y clima por ciudad
 packages/shared/ # @facturas/shared: TS sin compilar, lo consumen las dos apps
 ```
 
@@ -51,6 +52,7 @@ npm install                  # una sola vez, en la raíz: resuelve los tres work
 
 npm run dev:backend          # apps/backend en :3001
 npm run dev:frontend         # apps/frontend en :3000
+npm run mcp:clima            # apps/mcp-clima por stdio (lo normal es que un cliente MCP lo lance solo)
 npm run build                # build de producción de las dos apps
 npm run lint                 # eslint en todos los workspaces
 npm test                     # vitest en todos los workspaces (backend + shared)
