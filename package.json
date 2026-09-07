@@ -11,6 +11,7 @@
     "dev:backend": "npm run dev --workspace=@facturas/backend",
     "dev:frontend": "npm run dev --workspace=@facturas/frontend",
     "mcp:clima": "npm run start --workspace=@facturas/mcp-clima",
+    "mcp:invoices": "npm run start --workspace=@facturas/invoices-mcp",
     "build": "npm run build --workspace=@facturas/backend && npm run build --workspace=@facturas/frontend",
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present"

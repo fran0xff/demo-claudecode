@@ -15,10 +15,11 @@ propio `package.json`, pensadas para desplegarse por separado (npm
 workspaces, sin Turborepo ni pnpm):
 
 ```
-apps/backend/    # Next.js 16, solo app/api/** — la única que toca Prisma/Postgres
-apps/frontend/   # Next.js 16, solo páginas — nunca toca la base de datos
-apps/mcp-clima/  # Servidor MCP standalone (stdio, sin Next.js): tiempo y clima por ciudad
-packages/shared/ # @facturas/shared: TS sin compilar, lo consumen las dos apps
+apps/backend/       # Next.js 16, solo app/api/** — la única que toca Prisma/Postgres
+apps/frontend/      # Next.js 16, solo páginas — nunca toca la base de datos
+apps/mcp-clima/     # Servidor MCP standalone (stdio, sin Next.js): tiempo y clima por ciudad
+apps/invoices-mcp/  # Servidor MCP standalone (stdio, sin Next.js): consultas de facturación, conecta directo a Postgres/Supabase vía DATABASE_URL propio
+packages/shared/    # @facturas/shared: TS sin compilar, lo consumen las dos apps
 ```
 
 Cada app tiene su propio `CLAUDE.md` con el detalle de su arquitectura:
@@ -53,6 +54,7 @@ npm install                  # una sola vez, en la raíz: resuelve los tres work
 npm run dev:backend          # apps/backend en :3001
 npm run dev:frontend         # apps/frontend en :3000
 npm run mcp:clima            # apps/mcp-clima por stdio (lo normal es que un cliente MCP lo lance solo)
+npm run mcp:invoices         # apps/invoices-mcp por stdio (requiere apps/invoices-mcp/.env con DATABASE_URL)
 npm run build                # build de producción de las dos apps
 npm run lint                 # eslint en todos los workspaces
 npm test                     # vitest en todos los workspaces (backend + shared)

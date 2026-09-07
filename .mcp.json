@@ -8,6 +8,11 @@
       "type": "stdio",
       "command": "node",
       "args": ["node_modules/tsx/dist/cli.mjs", "apps/mcp-clima/src/index.ts"]
+    },
+    "invoices": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["node_modules/tsx/dist/cli.mjs", "apps/invoices-mcp/src/index.ts"]
     }
   }
 }
